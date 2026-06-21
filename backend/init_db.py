@@ -1,9 +1,7 @@
-import asyncio
-from models import engine, Base
+from sqlalchemy import create_engine
+from models import Base
 
-async def init():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
-asyncio.run(init())
+# Use sync connection for table creation
+engine = create_engine('postgresql://postgres:postgres@localhost:5432/gims')
+Base.metadata.create_all(engine)
 print("Database tables created successfully!")
