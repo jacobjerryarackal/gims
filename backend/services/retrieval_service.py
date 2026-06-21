@@ -29,7 +29,7 @@ class RetrievalService:
 
         try:
             query_embedding = await embedding_service.generate_embedding(query)
-            vector_results = await chroma_storage.query_similar(user_id=user_id, query_embedding=query_embedding, top_k=top_k * 2, where={"status": "active"})
+            vector_results = await chroma_storage.query_similar(user_id=user_id, query_embedding=query_embedding, top_k=top_k * 2,)
         except CircuitBreakerOpenException:
             method_used = "keyword"
         except Exception as e:
