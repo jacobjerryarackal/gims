@@ -18,7 +18,7 @@ class EvaluatedMemory:
 
 
 class MemoryEvaluatorAgent:
-    SYSTEM_PROMPT = """You are a Memory Evaluator Agent. Your job is to judge whether a candidate memory should be stored in the user's long-term memory.
+    SYSTEM_PROMPT = """You are a Memory Evaluator Agent. Your job is to judge whether a candidate memory should be stored in the user long-term memory.
 
 Evaluate each candidate on three dimensions (0.0 to 1.0):
 
@@ -54,11 +54,13 @@ Be conservative. It is better to miss a memory than to store a false one."""
     async def evaluate(self, candidate: CandidateMemory, existing_memories_text: List[str] = None) -> EvaluatedMemory:
         context = ""
         if existing_memories_text:
-            context = "
+            # FIXED: Changed single quotes to triple quotes for multi-line block
+            context = """
 
 Existing memories:
-" + "
-".join([f"- {m}" for m in existing_memories_text[:10]])
+""" + "\n".join([f"- {m}" for m in existing_memories_text[:10]])
+        
+        # FIXED: Changed standard f-string literal to f-string triple quotes
         prompt = f"""Evaluate this candidate memory:
 
 Memory text: {candidate.memory_text}
@@ -67,12 +69,22 @@ Extractor confidence: {candidate.confidence}
 {context}
 
 Provide your evaluation as JSON."""
+        
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.post(
                     f"{self.base_url}/chat/completions",
                     headers={"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"},
-                    json={"model": self.model, "messages": [{"role": "system", "content": self.SYSTEM_PROMPT}, {"role": "user", "content": prompt}], "temperature": 0.2, "max_tokens": 500, "response_format": {"type": "json_object"}}
+                    json={
+                        "model": self.model, 
+                        "messages": [
+                            {"role": "system", "content": self.SYSTEM_PROMPT}, 
+                            {"role": "user", "content": prompt}
+                        ], 
+                        "temperature": 0.2, 
+                        "max_tokens": 500, 
+                        "response_format": {"type": "json_object"}
+                    }
                 )
                 response.raise_for_status()
                 data = response.json()
@@ -84,6 +96,7 @@ Provide your evaluation as JSON."""
                 avg = (relevance + novelty + accuracy) / 3.0
                 reason = parsed.get("evaluation_reason", "No reason provided")
                 decision = parsed.get("decision", "hitl")
+                
                 if decision not in ["store", "dedup", "hitl", "reject"]:
                     if avg >= settings.EVALUATION_AUTO_STORE_THRESHOLD:
                         decision = "store"
@@ -93,7 +106,16 @@ Provide your evaluation as JSON."""
                         decision = "hitl"
                     else:
                         decision = "reject"
-                evaluated = EvaluatedMemory(candidate=candidate, relevance_score=relevance, novelty_score=novelty, accuracy_score=accuracy, avg_score=avg, evaluation_reason=reason, decision=decision)
+                        
+                evaluated = EvaluatedMemory(
+                    candidate=candidate, 
+                    relevance_score=relevance, 
+                    novelty_score=novelty, 
+                    accuracy_score=accuracy, 
+                    avg_score=avg, 
+                    evaluation_reason=reason, 
+                    decision=decision
+                )
                 telemetry.log_evaluation(memory_content=candidate.memory_text[:100], relevance=relevance, novelty=novelty, accuracy=accuracy, decision=decision)
                 return evaluated
         except Exception as e:
