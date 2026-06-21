@@ -15,7 +15,7 @@ class Conversation(Base):
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
     is_active = Column(Boolean, default=True)
     memory_consent = Column(Boolean, default=True)
-    metadata = Column(JSON, default=dict)
+    meta_data = Column(JSON, default=dict)
 
 
 class ConversationTurn(Base):
@@ -27,4 +27,4 @@ class ConversationTurn(Base):
     content = Column(String, nullable=False)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     token_count = Column(String(10))
-    metadata = Column(JSON, default=dict)
+    meta_data = Column(JSON, default=dict)
