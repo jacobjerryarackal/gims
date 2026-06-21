@@ -1,8 +1,7 @@
 import uuid
 from datetime import datetime
 from sqlalchemy import Column, String, DateTime, ForeignKey, JSON
-from sqlalchemy.dialects.postgresql import INET
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, INET
 from models import Base
 
 
