@@ -55,7 +55,7 @@ async def create_conversation(request: ChatRequest):
         return {
             "conversation_id": str(conversation.id), 
             "title": conversation.title,
-            "user_id": str(user_id)  # <-- Return actual user_id
+            "user_id": str(user_id)  # <-- Return the ACTUAL user_id
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to create conversation: {str(e)}")
