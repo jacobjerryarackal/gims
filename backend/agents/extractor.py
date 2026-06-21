@@ -48,7 +48,7 @@ If no memories should be extracted, return an empty array []."""
     def __init__(self):
         self.api_key = settings.OPENAI_API_KEY
         self.model = settings.OPENAI_MODEL
-        self.base_url = "https://api.openai.com/v1"
+        self.base_url = "https://api.groq.com/openai/v1"
     
     async def extract(self, conversation_text: str, turn_id: Optional[str] = None) -> List[CandidateMemory]:
         if not conversation_text or len(conversation_text.strip()) < 10:

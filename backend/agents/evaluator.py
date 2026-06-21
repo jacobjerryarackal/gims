@@ -49,7 +49,7 @@ Be conservative. It is better to miss a memory than to store a false one."""
     def __init__(self):
         self.api_key = settings.OPENAI_API_KEY
         self.model = settings.OPENAI_MODEL
-        self.base_url = "https://api.openai.com/v1"
+        self.base_url = "https://api.groq.com/openai/v1"
 
     async def evaluate(self, candidate: CandidateMemory, existing_memories_text: List[str] = None) -> EvaluatedMemory:
         context = ""

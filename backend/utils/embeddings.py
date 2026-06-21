@@ -8,7 +8,7 @@ class EmbeddingService:
     def __init__(self):
         self.api_key = settings.OPENAI_API_KEY
         self.model = settings.OPENAI_EMBEDDING_MODEL
-        self.base_url = "https://api.openai.com/v1"
+        self.base_url = "https://api.groq.com/openai/v1"
 
     async def generate_embedding(self, text: str) -> List[float]:
         if not text or not text.strip():
