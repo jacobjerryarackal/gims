@@ -1,6 +1,9 @@
 from typing import Optional, List
 from sqlalchemy import select, update, func, text
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from sqlalchemy.orm import declarative_base
+from core.config import settings
+import os
 from models import AsyncSessionLocal
 from models.user import User
 from models.conversation import Conversation, ConversationTurn
@@ -11,6 +14,19 @@ from core.exceptions import UserNotFoundException, MemoryNotFoundException, Conv
 import uuid
 from datetime import datetime
 
+
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:15432/gims")
+
+# Convert to async URL if needed
+if DATABASE_URL.startswith("postgresql://"):
+    ASYNC_DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
+else:
+    ASYNC_DATABASE_URL = DATABASE_URL
+
+engine = create_async_engine(ASYNC_DATABASE_URL, echo=True)
+async_session = async_sessionmaker(engine, expire_on_commit=False)
+
+Base = declarative_base()
 
 class PostgresStorage:
     def __init__(self):
