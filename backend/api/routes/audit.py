@@ -5,7 +5,7 @@ from datetime import datetime
 
 from services.governance_service import governance_service
 
-router = APIRouter(prefix="/api/v1/audit", tags=["audit"])
+router = APIRouter(tags=["audit"])
 
 
 @router.get("")

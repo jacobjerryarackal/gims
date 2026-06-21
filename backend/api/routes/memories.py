@@ -9,7 +9,7 @@ from services.dedup_service import dedup_service
 from storage.postgres import postgres_storage
 from core.exceptions import MemoryNotFoundException
 
-router = APIRouter(prefix="/api/v1/memories", tags=["memories"])
+router = APIRouter(tags=["memories"])
 
 class MemoryCreateRequest(BaseModel):
     user_id: str

@@ -6,7 +6,7 @@ from datetime import datetime
 
 from services.governance_service import governance_service
 
-router = APIRouter(prefix="/api/v1/hitl", tags=["hitl"])
+router = APIRouter(tags=["hitl"])
 
 
 class HITLReviewRequest(BaseModel):

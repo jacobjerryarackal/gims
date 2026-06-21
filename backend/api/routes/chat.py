@@ -9,7 +9,7 @@ from services.governance_service import governance_service
 from storage.postgres import postgres_storage
 from core.exceptions import UserNotFoundException
 
-router = APIRouter(prefix="/api/v1/chat", tags=["chat"])
+router = APIRouter(tags=["chat"])
 
 class ChatRequest(BaseModel):
     message: str = Field(..., max_length=4000)
