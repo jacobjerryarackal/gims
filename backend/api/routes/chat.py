@@ -23,15 +23,73 @@ class ChatResponse(BaseModel):
     extracted_memories: List[Dict[str, Any]] = []
     latency_ms: int
 
-@router.post("", response_model=ChatResponse)
-async def chat(request: ChatRequest):
+@router.get("/conversations")
+async def get_conversations(user_id: str):
+    """Get all conversations for a user."""
+    try:
+        user_uuid = uuid.UUID(user_id)
+        # You'll need to add this method to postgres_storage
+        conversations = await postgres_storage.get_conversations_by_user(user_uuid)
+        return {"conversations": conversations}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get conversations: {str(e)}")
+
+@router.post("/conversations")
+async def create_conversation(request: ChatRequest):
+    """Create a new conversation."""
+    try:
+        user_id = uuid.UUID(request.user_id)
+        try:
+            user = await governance_service.get_user(user_id)
+        except UserNotFoundException:
+            user = await governance_service.get_or_create_user(
+                email=f"user_{request.user_id}@example.com", 
+                name="Demo User"
+            )
+            user_id = user.id
+        
+        conversation = await postgres_storage.create_conversation(
+            user_id=user_id,
+            title="New Conversation",
+            memory_consent=request.memory_consent
+        )
+        return {"conversation_id": str(conversation.id), "title": conversation.title}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create conversation: {str(e)}")
+
+@router.get("/conversations/{conversation_id}/messages")
+async def get_messages(conversation_id: str):
+    """Get all messages in a conversation."""
+    try:
+        conv_uuid = uuid.UUID(conversation_id)
+        turns = await postgres_storage.get_conversation_turns(conv_uuid)
+        return {"messages": turns}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get messages: {str(e)}")
+
+@router.delete("/conversations/{conversation_id}")
+async def delete_conversation(conversation_id: str):
+    """Delete a conversation."""
+    try:
+        conv_uuid = uuid.UUID(conversation_id)
+        await postgres_storage.delete_conversation(conv_uuid)
+        return {"status": "deleted"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete conversation: {str(e)}")
+
+@router.post("")  # This handles POST /api/chat
+async def send_message(request: ChatRequest):
+    """Send a message and get a response."""
     start_time = datetime.utcnow()
     try:
         user_id = uuid.UUID(request.user_id)
         try:
             user = await governance_service.get_user(user_id)
         except UserNotFoundException:
-            user = await governance_service.get_or_create_user(email=f"user_{request.user_id}@example.com", name="Demo User")
+            user = await governance_service.get_or_create_user(
+                email=f"user_{request.user_id}@example.com", 
+                name="Demo User"
+            )
             user_id = user.id
         
         if request.conversation_id:
@@ -39,13 +97,26 @@ async def chat(request: ChatRequest):
             try:
                 conversation = await postgres_storage.get_conversation(conversation_id)
             except:
-                conversation = await postgres_storage.create_conversation(user_id=user_id, title="New Conversation", memory_consent=request.memory_consent)
+                conversation = await postgres_storage.create_conversation(
+                    user_id=user_id,
+                    title="New Conversation",
+                    memory_consent=request.memory_consent
+                )
                 conversation_id = conversation.id
         else:
-            conversation = await postgres_storage.create_conversation(user_id=user_id, title="New Conversation", memory_consent=request.memory_consent)
+            conversation = await postgres_storage.create_conversation(
+                user_id=user_id,
+                title="New Conversation",
+                memory_consent=request.memory_consent
+            )
             conversation_id = conversation.id
         
-        pipeline_result = await memory_pipeline.process_message(user_id=user_id, conversation_id=conversation_id, message=request.message, role="user")
+        pipeline_result = await memory_pipeline.process_message(
+            user_id=user_id,
+            conversation_id=conversation_id,
+            message=request.message,
+            role="user"
+        )
         
         context = pipeline_result.get("context", "")
         retrieved = pipeline_result.get("retrieved_memories", [])
@@ -58,6 +129,11 @@ async def chat(request: ChatRequest):
             response_text = f"I don't have any specific memories about you yet, but here's my response to: '{request.message}'"
         
         latency = int((datetime.utcnow() - start_time).total_seconds() * 1000)
-        return ChatResponse(response=response_text, memories_used=retrieved, extracted_memories=extracted, latency_ms=latency)
+        return ChatResponse(
+            response=response_text,
+            memories_used=retrieved,
+            extracted_memories=extracted,
+            latency_ms=latency
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Chat processing failed: {str(e)}")
