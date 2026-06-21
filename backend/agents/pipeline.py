@@ -60,11 +60,14 @@ class MemoryPipeline:
     async def _capture_node(self, state: dict) -> dict:
         try:
             turn = await postgres_storage.create_turn(conversation_id=state["conversation_id"], role=state["role"], content=state["message"])
+            print(f"PIPELINE: Created turn {turn.id}")
             candidates = await extractor_agent.extract(conversation_text=state["message"], turn_id=str(turn.id))
+            print(f"PIPELINE: Extractor returned {len(candidates)} candidates")
             state["extracted_memories"] = [c.to_dict() for c in candidates]
             state["turn_id"] = str(turn.id)
             telemetry.log_memory_operation("capture_complete", user_id=state["user_id"], details={"candidates": len(candidates)})
         except Exception as e:
+            print(f"PIPELINE CAPTURE ERROR: {str(e)}")
             state["error"] = f"Capture failed: {str(e)}"
             state["extracted_memories"] = []
         return state
@@ -72,6 +75,7 @@ class MemoryPipeline:
     async def _evaluate_node(self, state: dict) -> dict:
         try:
             candidates = [CandidateMemory(**c) for c in state.get("extracted_memories", [])]
+            print(f"PIPELINE: Evaluating {len(candidates)} candidates")
             if not candidates:
                 state["evaluated_memories"] = []
                 return state
@@ -127,6 +131,7 @@ class MemoryPipeline:
                         stored.append({"id": str(memory.id), "content": memory.content})
             state["stored_memories"] = stored
         except Exception as e:
+            print(f"PIPELINE DEDUP ERROR: {str(e)}")
             state["error"] = f"Dedup failed: {str(e)}"
         return state
 
@@ -138,6 +143,7 @@ class MemoryPipeline:
                     await governance_service.create_hitl_item(user_id=uuid.UUID(state["user_id"]), reason=e["evaluation_reason"], confidence_score=e["avg_score"])
             state["stored_memories"] = []
         except Exception as e:
+            print(f"PIPELINE HiTl ERROR: {str(e)}")
             state["error"] = f"HITL queue failed: {str(e)}"
         return state
 

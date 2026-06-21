@@ -1,6 +1,12 @@
 from pydantic_settings import BaseSettings
 from pydantic import Field
+import os
+from dotenv import load_dotenv
 
+# Load .env from the project root (gims/.env)
+# This file is at core/config.py, so go up two levels
+env_path = os.path.join(os.path.dirname(__file__), '..', '..', '.env')
+load_dotenv(env_path, override=True)
 
 class Settings(BaseSettings):
     DATABASE_URL: str = Field(default="postgresql+asyncpg://postgres:postgres@localhost:15432/gims")
@@ -34,3 +40,8 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+# Debug: verify .env was loaded
+print(f"DEBUG config.py: DATABASE_URL={settings.DATABASE_URL}")
+print(f"DEBUG config.py: OPENAI_MODEL={settings.OPENAI_MODEL}")
+print(f"DEBUG config.py: OPENAI_API_KEY starts with={settings.OPENAI_API_KEY[:15] if settings.OPENAI_API_KEY else 'EMPTY'}")

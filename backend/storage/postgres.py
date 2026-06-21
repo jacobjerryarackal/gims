@@ -15,7 +15,7 @@ import uuid
 from datetime import datetime
 
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:15432/gims")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:postgres@localhost:15432/gims")
 
 # Convert to async URL if needed
 if DATABASE_URL.startswith("postgresql://"):

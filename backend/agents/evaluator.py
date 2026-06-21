@@ -89,6 +89,7 @@ Provide your evaluation as JSON."""
                 response.raise_for_status()
                 data = response.json()
                 content = data["choices"][0]["message"]["content"]
+                print(f"EVALUATOR: Evaluating '{candidate.memory_text[:50]}...'")
                 parsed = json.loads(content)
                 relevance = float(parsed.get("relevance_score", 0.5))
                 novelty = float(parsed.get("novelty_score", 0.5))

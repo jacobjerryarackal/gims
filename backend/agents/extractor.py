@@ -34,53 +34,87 @@ Memory Types:
 Rules:
 - Only extract facts the user explicitly stated about THEMSELVES
 - Use exact quotes when possible
-- Distinguish between "User said X" and "User's friend/colleague said X"
 - If uncertain, do NOT extract
 - Do NOT extract: opinions about others, general knowledge, transient information
 
-Return a JSON array of extracted memories. Each memory must have:
-- memory_text: The exact or closely paraphrased fact
-- memory_type: "semantic", "procedural", or "episodic"
-- confidence: 0.0 to 1.0 (how certain you are this is a real, useful fact)
+IMPORTANT: Return ONLY a valid JSON array. No markdown, no explanations, no code blocks.
 
-If no memories should be extracted, return an empty array []."""
+Example output:
+[
+  {"memory_text": "I am an AI Engineer", "memory_type": "semantic", "confidence": 0.95},
+  {"memory_text": "I prefer first-principles explanations", "memory_type": "procedural", "confidence": 0.90}
+]
+
+If no memories should be extracted, return an empty array: []."""
     
     def __init__(self):
         self.api_key = settings.OPENAI_API_KEY
         self.model = settings.OPENAI_MODEL
         self.base_url = "https://api.groq.com/openai/v1"
     
+    
     async def extract(self, conversation_text: str, turn_id: Optional[str] = None) -> List[CandidateMemory]:
         if not conversation_text or len(conversation_text.strip()) < 10:
+            print("EXTRACTOR: Text too short, skipping")
             return []
         try:
+            print(f"EXTRACTOR: Calling Groq API with model={self.model}")
+            print(f"EXTRACTOR: API key starts with={self.api_key[:15]}...")
+            
             prompt_text = f"Extract memories from this conversation:\n\n{conversation_text}"
+            
             async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.post(
                     f"{self.base_url}/chat/completions",
                     headers={"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"},
-                    json={"model": self.model, "messages": [{"role": "system", "content": self.SYSTEM_PROMPT}, {"role": "user", "content": prompt_text}], "temperature": 0.3, "max_tokens": 1000, "response_format": {"type": "json_object"}}
+                    json={
+                        "model": self.model,
+                        "messages": [
+                            {"role": "system", "content": self.SYSTEM_PROMPT},
+                            {"role": "user", "content": prompt_text}
+                        ],
+                        "temperature": 0.3,
+                        "max_tokens": 1000
+                    }
                 )
+                print(f"EXTRACTOR: Response status={response.status_code}")
                 response.raise_for_status()
                 data = response.json()
                 content = data["choices"][0]["message"]["content"]
+                print(f"EXTRACTOR: Raw response={content}")
+                
                 parsed = json.loads(content)
+                print(f"EXTRACTOR: Parsed type={type(parsed)}")
+                
                 memories = []
                 if "memories" in parsed:
                     items = parsed["memories"]
+                    print(f"EXTRACTOR: Found 'memories' key with {len(items)} items")
                 elif isinstance(parsed, list):
                     items = parsed
+                    print(f"EXTRACTOR: Found list with {len(items)} items")
                 else:
                     items = []
+                    print(f"EXTRACTOR: Unknown format, keys={parsed.keys() if isinstance(parsed, dict) else 'N/A'}")
+                
                 for item in items:
                     if isinstance(item, dict) and "memory_text" in item:
-                        memory = CandidateMemory(memory_text=item["memory_text"], memory_type=item.get("memory_type", "semantic"), confidence=item.get("confidence", 0.5), source_turn_id=turn_id)
+                        memory = CandidateMemory(
+                            memory_text=item["memory_text"],
+                            memory_type=item.get("memory_type", "semantic"),
+                            confidence=item.get("confidence", 0.5),
+                            source_turn_id=turn_id
+                        )
                         memories.append(memory)
+                        print(f"EXTRACTOR: Extracted memory: {item['memory_text'][:50]}...")
+                
+                print(f"EXTRACTOR: Total extracted: {len(memories)}")
                 telemetry.log_memory_operation("extracted", user_id=None, details={"candidates_found": len(memories), "input_length": len(conversation_text)})
                 return memories
+                
         except Exception as e:
+            print(f"EXTRACTOR ERROR: {type(e).__name__}: {str(e)}")
             telemetry.log_memory_operation("extract_failed", user_id=None, details={"error": str(e)})
-            print(f"EXTRACTOR ERROR: {str(e)}")
             return []
 
 
