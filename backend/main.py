@@ -9,11 +9,8 @@ from api.middleware.logging import logging_middleware
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
     await chroma_storage.connect()
     yield
-    # Shutdown
-    pass
 
 app = FastAPI(
     title="GIMS - GPT Intelligence Memory System",
@@ -21,7 +18,6 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"] if settings.DEBUG else ["https://your-frontend.vercel.app"],
@@ -30,12 +26,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Routes
-app.include_router(chat.router)
-app.include_router(memories.router)
-app.include_router(hitl.router)
-app.include_router(audit.router)
-app.include_router(metrics.router)
+# Add /api prefix to all routers
+app.include_router(chat.router, prefix="/api")
+app.include_router(memories.router, prefix="/api")
+app.include_router(hitl.router, prefix="/api")
+app.include_router(audit.router, prefix="/api")
+app.include_router(metrics.router, prefix="/api")
 
 @app.get("/health")
 async def health_check():
