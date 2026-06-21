@@ -36,7 +36,6 @@ async def get_conversations(user_id: str):
 
 @router.post("/conversations")
 async def create_conversation(request: ChatRequest):
-    """Create a new conversation."""
     try:
         user_id = uuid.UUID(request.user_id)
         try:
@@ -53,7 +52,11 @@ async def create_conversation(request: ChatRequest):
             title="New Conversation",
             memory_consent=request.memory_consent
         )
-        return {"conversation_id": str(conversation.id), "title": conversation.title}
+        return {
+            "conversation_id": str(conversation.id), 
+            "title": conversation.title,
+            "user_id": str(user_id)  # <-- Return actual user_id
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to create conversation: {str(e)}")
 
