@@ -118,13 +118,17 @@ class MemoryPipeline:
         evaluated = state.get("evaluated_memories", [])
         if not evaluated:
             return "reject"
-        avg_scores = [e["avg_score"] for e in evaluated]
-        max_score = max(avg_scores) if avg_scores else 0
-        if max_score >= settings.EVALUATION_AUTO_STORE_THRESHOLD:
+        
+        # Trust the evaluator's decision
+        has_store = any(e["decision"] == "store" for e in evaluated)
+        has_dedup = any(e["decision"] == "dedup" for e in evaluated)
+        has_hitl = any(e["decision"] == "hitl" for e in evaluated)
+        
+        if has_store:
             return "store"
-        elif max_score >= settings.EVALUATION_DEDUP_THRESHOLD:
+        elif has_dedup:
             return "dedup"
-        elif max_score >= settings.EVALUATION_HITL_THRESHOLD:
+        elif has_hitl:
             return "hitl"
         else:
             return "reject"
