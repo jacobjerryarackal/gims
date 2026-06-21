@@ -31,7 +31,7 @@ class Memory(Base):
     participants = Column(ARRAY(String), nullable=True)
 
     source_turn_id = Column(UUID(as_uuid=True), ForeignKey("conversation_turns.id"), nullable=True)
-    metadata = Column(String, default="{}")
+    meta_data = Column(String, default="{}")
     chroma_id = Column(String(255), nullable=True)
 
     __table_args__ = (
