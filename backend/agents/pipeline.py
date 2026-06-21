@@ -59,13 +59,15 @@ class MemoryPipeline:
 
     async def _capture_node(self, state: dict) -> dict:
         try:
+            print(f"PIPELINE CAPTURE: message={state['message'][:50]}...")
             turn = await postgres_storage.create_turn(conversation_id=state["conversation_id"], role=state["role"], content=state["message"])
-            print(f"PIPELINE: Created turn {turn.id}")
+            print(f"PIPELINE CAPTURE: Created turn {turn.id}")
             candidates = await extractor_agent.extract(conversation_text=state["message"], turn_id=str(turn.id))
-            print(f"PIPELINE: Extractor returned {len(candidates)} candidates")
+            print(f"PIPELINE CAPTURE: Extractor returned {len(candidates)} candidates")
+            for c in candidates:
+                print(f"  - {c.memory_text[:50]} ({c.memory_type})")
             state["extracted_memories"] = [c.to_dict() for c in candidates]
             state["turn_id"] = str(turn.id)
-            telemetry.log_memory_operation("capture_complete", user_id=state["user_id"], details={"candidates": len(candidates)})
         except Exception as e:
             print(f"PIPELINE CAPTURE ERROR: {str(e)}")
             state["error"] = f"Capture failed: {str(e)}"
@@ -75,18 +77,41 @@ class MemoryPipeline:
     async def _evaluate_node(self, state: dict) -> dict:
         try:
             candidates = [CandidateMemory(**c) for c in state.get("extracted_memories", [])]
-            print(f"PIPELINE: Evaluating {len(candidates)} candidates")
+            print(f"PIPELINE EVALUATE: Evaluating {len(candidates)} candidates")
             if not candidates:
+                print("PIPELINE EVALUATE: No candidates to evaluate")
                 state["evaluated_memories"] = []
                 return state
             existing = await postgres_storage.get_memories_by_user(user_id=uuid.UUID(state["user_id"]), limit=50)
             existing_texts = [m.content for m in existing]
             evaluated = await evaluator_agent.evaluate_batch(candidates, existing_texts)
+            print(f"PIPELINE EVALUATE: Evaluator returned {len(evaluated)} results")
+            for e in evaluated:
+                print(f"  - decision={e.decision}, avg_score={e.avg_score:.2f}, reason={e.evaluation_reason[:50]}")
             state["evaluated_memories"] = [{"candidate": e.candidate.to_dict(), "relevance_score": e.relevance_score, "novelty_score": e.novelty_score, "accuracy_score": e.accuracy_score, "avg_score": e.avg_score, "evaluation_reason": e.evaluation_reason, "decision": e.decision} for e in evaluated]
-            telemetry.log_memory_operation("evaluate_complete", user_id=state["user_id"], details={"evaluated": len(evaluated)})
         except Exception as e:
+            print(f"PIPELINE EVALUATE ERROR: {str(e)}")
             state["error"] = f"Evaluation failed: {str(e)}"
             state["evaluated_memories"] = []
+        return state
+
+    async def _store_node(self, state: dict) -> dict:
+        try:
+            evaluated = state.get("evaluated_memories", [])
+            print(f"PIPELINE STORE: Storing {len(evaluated)} evaluated memories")
+            stored = []
+            for e in evaluated:
+                print(f"PIPELINE STORE: Processing decision={e['decision']}")
+                if e["decision"] == "store":
+                    print(f"PIPELINE STORE: Creating memory for {e['candidate']['memory_text'][:50]}")
+                    memory = await memory_service.create_memory(...)
+                    stored.append({"id": str(memory.id), "content": memory.content})
+                    print(f"PIPELINE STORE: Memory created {memory.id}")
+            state["stored_memories"] = stored
+            print(f"PIPELINE STORE: Total stored {len(stored)}")
+        except Exception as e:
+            print(f"PIPELINE STORE ERROR: {str(e)}")
+            state["error"] = f"Store failed: {str(e)}"
         return state
 
     def _evaluation_router(self, state: dict) -> str:
@@ -103,19 +128,6 @@ class MemoryPipeline:
             return "hitl"
         else:
             return "reject"
-
-    async def _store_node(self, state: dict) -> dict:
-        try:
-            evaluated = state.get("evaluated_memories", [])
-            stored = []
-            for e in evaluated:
-                if e["decision"] == "store":
-                    memory = await memory_service.create_memory(user_id=uuid.UUID(state["user_id"]), content=e["candidate"]["memory_text"], memory_type=e["candidate"]["memory_type"], relevance_score=e["relevance_score"], novelty_score=e["novelty_score"], accuracy_score=e["accuracy_score"], conversation_id=uuid.UUID(state["conversation_id"]), source_turn_id=uuid.UUID(state.get("turn_id")) if state.get("turn_id") else None)
-                    stored.append({"id": str(memory.id), "content": memory.content})
-            state["stored_memories"] = stored
-        except Exception as e:
-            state["error"] = f"Store failed: {str(e)}"
-        return state
 
     async def _dedup_node(self, state: dict) -> dict:
         try:
