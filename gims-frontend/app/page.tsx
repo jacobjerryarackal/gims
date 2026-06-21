@@ -155,7 +155,7 @@ export default function LandingPage() {
             <Sparkles className="h-4 w-4" />
             <span className="font-semibold">GIMS</span>
           </div>
-          <p>Built for the 4-Hour MVP Hackathon</p>
+          <p>Built by Jacob</p>
         </div>
       </footer>
     </div>
