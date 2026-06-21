@@ -189,6 +189,27 @@ class PostgresStorage:
         async with self.session_factory() as session:
             result = await session.execute(select(Memory).where(Memory.user_id == user_id, Memory.status == "active").order_by(Memory.last_accessed_at.desc().nulls_last(), Memory.created_at.desc()).limit(limit))
             return result.scalars().all()
+        
+    async def get_conversations_by_user(self, user_id: uuid.UUID) -> List[Conversation]:
+        async with self.session_factory() as session:
+            result = await session.execute(
+                select(Conversation).where(Conversation.user_id == user_id)
+            )
+            return result.scalars().all()
+
+    async def get_conversation_turns(self, conversation_id: uuid.UUID) -> List[ConversationTurn]:
+        async with self.session_factory() as session:
+            result = await session.execute(
+                select(ConversationTurn).where(ConversationTurn.conversation_id == conversation_id)
+            )
+            return result.scalars().all()
+
+    async def delete_conversation(self, conversation_id: uuid.UUID) -> None:
+        async with self.session_factory() as session:
+            await session.execute(
+                update(Conversation).where(Conversation.id == conversation_id).values(is_active=False)
+            )
+            await session.commit()
 
 
 postgres_storage = PostgresStorage()
