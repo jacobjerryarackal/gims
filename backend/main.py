@@ -30,10 +30,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# REGISTER the logging middleware (this was missing!)
+# REGISTER the logging middleware
 app.middleware("http")(logging_middleware)
 
-# Routes with /api prefix
+# Routes
 app.include_router(chat.router, prefix="/api/chat")
 app.include_router(memories.router, prefix="/api/memories")
 app.include_router(hitl.router, prefix="/api/hitl")
