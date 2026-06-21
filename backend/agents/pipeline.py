@@ -169,11 +169,11 @@ class MemoryPipeline:
                 return state
             context_parts = ["Relevant memories from previous conversations:"]
             for i, mem in enumerate(retrieved, 1):
-                context_parts.append(f"
-{i}. [{mem['memory_type'].upper()}] {mem['content']}")
-                context_parts.append(f"   Why retrieved: {mem['explanation']}")
-            state["context"] = "
-".join(context_parts)
+                line1 = f"{i}. [{mem['memory_type'].upper()}] {mem['content']}"
+                line2 = f"   Why retrieved: {mem['explanation']}"
+                context_parts.append(line1)
+                context_parts.append(line2)
+            state["context"] = "\n".join(context_parts)
         except Exception as e:
             state["error"] = f"Context building failed: {str(e)}"
             state["context"] = ""
