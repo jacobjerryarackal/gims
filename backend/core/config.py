@@ -3,7 +3,7 @@ from pydantic import Field
 
 
 class Settings(BaseSettings):
-    DATABASE_URL: str = Field(default="postgresql+asyncpg://postgres:postgres@localhost:5432/gims")
+    DATABASE_URL: str = Field(default="postgresql+asyncpg://postgres:postgres@localhost:15432/gims")
     CHROMADB_HOST: str = Field(default="localhost")
     CHROMADB_PORT: int = Field(default=8000)
     OPENAI_API_KEY: str = Field(default="")
