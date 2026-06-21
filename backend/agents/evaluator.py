@@ -120,6 +120,7 @@ Provide your evaluation as JSON."""
                 return evaluated
         except Exception as e:
             telemetry.log_memory_operation("evaluation_failed", user_id=None, details={"error": str(e), "memory": candidate.memory_text[:100]})
+            print(f"EVALUATOR ERROR: {str(e)}")
             return EvaluatedMemory(candidate=candidate, relevance_score=0.3, novelty_score=0.3, accuracy_score=0.3, avg_score=0.3, evaluation_reason=f"Evaluation failed: {str(e)}", decision="reject")
 
     async def evaluate_batch(self, candidates: List[CandidateMemory], existing_memories_text: List[str] = None) -> List[EvaluatedMemory]:

@@ -80,6 +80,7 @@ If no memories should be extracted, return an empty array []."""
                 return memories
         except Exception as e:
             telemetry.log_memory_operation("extract_failed", user_id=None, details={"error": str(e)})
+            print(f"EXTRACTOR ERROR: {str(e)}")
             return []
 
 
