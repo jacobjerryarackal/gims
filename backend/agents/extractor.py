@@ -11,7 +11,7 @@ class CandidateMemory:
         self.memory_type = memory_type
         self.confidence = confidence
         self.source_turn_id = source_turn_id
-
+    
     def to_dict(self) -> Dict[str, Any]:
         return {"memory_text": self.memory_text, "memory_type": self.memory_type, "confidence": self.confidence, "source_turn_id": self.source_turn_id}
 
@@ -44,23 +44,22 @@ Return a JSON array of extracted memories. Each memory must have:
 - confidence: 0.0 to 1.0 (how certain you are this is a real, useful fact)
 
 If no memories should be extracted, return an empty array []."""
-
+    
     def __init__(self):
         self.api_key = settings.OPENAI_API_KEY
         self.model = settings.OPENAI_MODEL
         self.base_url = "https://api.openai.com/v1"
-
+    
     async def extract(self, conversation_text: str, turn_id: Optional[str] = None) -> List[CandidateMemory]:
         if not conversation_text or len(conversation_text.strip()) < 10:
             return []
         try:
+            prompt_text = f"Extract memories from this conversation:\n\n{conversation_text}"
             async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.post(
                     f"{self.base_url}/chat/completions",
                     headers={"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"},
-                    json={"model": self.model, "messages": [{"role": "system", "content": self.SYSTEM_PROMPT}, {"role": "user", "content": f"Extract memories from this conversation:
-
-{conversation_text}"}], "temperature": 0.3, "max_tokens": 1000, "response_format": {"type": "json_object"}}
+                    json={"model": self.model, "messages": [{"role": "system", "content": self.SYSTEM_PROMPT}, {"role": "user", "content": prompt_text}], "temperature": 0.3, "max_tokens": 1000, "response_format": {"type": "json_object"}}
                 )
                 response.raise_for_status()
                 data = response.json()
