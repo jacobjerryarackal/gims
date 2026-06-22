@@ -104,7 +104,17 @@ class MemoryPipeline:
                 print(f"PIPELINE STORE: Processing decision={e['decision']}")
                 if e["decision"] == "store":
                     print(f"PIPELINE STORE: Creating memory for {e['candidate']['memory_text'][:50]}")
-                    memory = await memory_service.create_memory(...)
+                    source_turn_id = e["candidate"].get("source_turn_id")
+                    memory = await memory_service.create_memory(
+                        user_id=uuid.UUID(state["user_id"]),
+                        content=e["candidate"]["memory_text"],
+                        memory_type=e["candidate"]["memory_type"],
+                        relevance_score=e["relevance_score"],
+                        novelty_score=e["novelty_score"],
+                        accuracy_score=e["accuracy_score"],
+                        conversation_id=uuid.UUID(state["conversation_id"]),
+                        source_turn_id=uuid.UUID(source_turn_id) if source_turn_id else None,
+                    )
                     stored.append({"id": str(memory.id), "content": memory.content})
                     print(f"PIPELINE STORE: Memory created {memory.id}")
             state["stored_memories"] = stored

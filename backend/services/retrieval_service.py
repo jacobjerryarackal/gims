@@ -29,7 +29,9 @@ class RetrievalService:
 
         try:
             query_embedding = await embedding_service.generate_embedding(query)
-            vector_results = await chroma_storage.query_similar(user_id=user_id, query_embedding=query_embedding, top_k=top_k * 2,)
+            print(f"RETRIEVAL: Generated embedding length={len(query_embedding)}")
+            vector_results = await chroma_storage.query_similar(user_id=user_id, query_embedding=query_embedding, top_k=top_k * 2)
+            print(f"RETRIEVAL: ChromaDB returned {len(vector_results)} results")
         except CircuitBreakerOpenException:
             method_used = "keyword"
         except Exception as e:
@@ -39,6 +41,7 @@ class RetrievalService:
             keyword_memories = await postgres_storage.search_memories_keyword(user_id=user_id, query=query, top_k=top_k * 2)
             keyword_results = [{"id": str(m.id), "content": m.content, "metadata": {"memory_type": m.memory_type, "avg_score": float(m.avg_score)}, "distance": 0.5} for m in keyword_memories]
         except Exception as e:
+            print(f"RETRIEVAL: ChromaDB failed: {str(e)}")
             pass
 
         fused_results = self._reciprocal_rank_fusion(vector_results, keyword_results, k=60)
@@ -51,6 +54,7 @@ class RetrievalService:
                 explanation = self._generate_explanation(query=query, memory=memory, similarity_score=result.get("score", 0.5), retrieval_method=method_used)
                 retrieved.append(RetrievedMemory(memory=memory, similarity_score=result.get("score", 0.5), retrieval_method=method_used, explanation=explanation))
             except Exception as e:
+                print(f"RETRIEVAL: ChromaDB failed 2: {str(e)}")
                 continue
 
         latency_ms = (time.time() - start_time) * 1000
