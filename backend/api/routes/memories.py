@@ -48,6 +48,50 @@ async def create_memory(request: MemoryCreateRequest):
         await memory_service.update_memory(memory.id, expires_at=request.expires_at)
     return MemoryResponse(id=str(memory.id), user_id=str(memory.user_id), content=memory.content, memory_type=memory.memory_type, status=memory.status, avg_score=float(memory.avg_score) if memory.avg_score else 0.0, created_at=memory.created_at, expires_at=memory.expires_at)
 
+@router.get("/stats")
+async def get_memory_stats(user_id: str = Query(...)):
+    """Get memory statistics for a user."""
+    import traceback
+    try:
+        user_uuid = uuid.UUID(user_id)
+        print(f"STATS DEBUG: user_uuid={user_uuid}")
+        
+        # Test get_memory_count
+        try:
+            total = await memory_service.get_memory_count(user_uuid)
+            print(f"STATS DEBUG: total={total}")
+        except Exception as e:
+            print(f"STATS DEBUG ERROR get_memory_count: {traceback.format_exc()}")
+            total = 0
+        
+        # Test get_user_memories with no type filter
+        try:
+            all_memories = await memory_service.get_user_memories(user_uuid, limit=1000)
+            print(f"STATS DEBUG: all_memories={len(all_memories)}")
+        except Exception as e:
+            print(f"STATS DEBUG ERROR get_user_memories: {traceback.format_exc()}")
+            all_memories = []
+        
+        # Calculate by type manually
+        semantic = sum(1 for m in all_memories if m.memory_type == "semantic")
+        procedural = sum(1 for m in all_memories if m.memory_type == "procedural")
+        episodic = sum(1 for m in all_memories if m.memory_type == "episodic")
+        
+        return {
+            "total_memories": len(all_memories),
+            "by_type": {
+                "semantic": semantic,
+                "procedural": procedural,
+                "episodic": episodic
+            },
+            "recently_added": len(all_memories),
+            "active_memories": len(all_memories)
+        }
+    except Exception as e:
+        print(f"STATS DEBUG ERROR: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Failed to get stats: {str(e)}")
+
+
 @router.get("/{memory_id}", response_model=MemoryResponse)
 async def get_memory(memory_id: str):
     memory_uuid = uuid.UUID(memory_id)
@@ -80,37 +124,3 @@ async def search_memories(user_id: str, query: str, search_method: str = "hybrid
 async def run_dedup(user_id: str, similarity_threshold: float = 0.85):
     user_uuid = uuid.UUID(user_id)
     return await dedup_service.run_dedup_scan(user_uuid)
-
-@router.get("/stats")
-async def get_memory_stats(user_id: str = Query(...)):
-    """Get memory statistics for a user."""
-    try:
-        user_uuid = uuid.UUID(user_id)
-        
-        # Get total count
-        total = await memory_service.get_memory_count(user_uuid)
-        
-        # Get by type (handle empty results)
-        semantic_memories = await memory_service.get_user_memories(user_uuid, memory_type="semantic", limit=100)
-        procedural_memories = await memory_service.get_user_memories(user_uuid, memory_type="procedural", limit=100)
-        episodic_memories = await memory_service.get_user_memories(user_uuid, memory_type="episodic", limit=100)
-        
-        # Get recent
-        recent = await memory_service.get_recent_memories(user_uuid, limit=5)
-        
-        return {
-            "total_memories": total,
-            "by_type": {
-                "semantic": len(semantic_memories),
-                "procedural": len(procedural_memories),
-                "episodic": len(episodic_memories)
-            },
-            "recently_added": len(recent),
-            "active_memories": total
-        }
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=f"Invalid user_id: {str(e)}")
-    except Exception as e:
-        # Log the actual error for debugging
-        print(f"STATS ERROR: {type(e).__name__}: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to get stats: {str(e)}")
