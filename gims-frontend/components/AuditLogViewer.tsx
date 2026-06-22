@@ -64,7 +64,7 @@ export default function AuditLogViewer() {
     loadLogs();
   };
 
-  const filteredLogs = logs.filter((log) => {
+  const filteredLogs = (logs || []).filter((log) => {
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       return (
