@@ -80,3 +80,37 @@ async def search_memories(user_id: str, query: str, search_method: str = "hybrid
 async def run_dedup(user_id: str, similarity_threshold: float = 0.85):
     user_uuid = uuid.UUID(user_id)
     return await dedup_service.run_dedup_scan(user_uuid)
+
+@router.get("/stats")
+async def get_memory_stats(user_id: str = Query(...)):
+    """Get memory statistics for a user."""
+    try:
+        user_uuid = uuid.UUID(user_id)
+        
+        # Get total count
+        total = await memory_service.get_memory_count(user_uuid)
+        
+        # Get by type (handle empty results)
+        semantic_memories = await memory_service.get_user_memories(user_uuid, memory_type="semantic", limit=100)
+        procedural_memories = await memory_service.get_user_memories(user_uuid, memory_type="procedural", limit=100)
+        episodic_memories = await memory_service.get_user_memories(user_uuid, memory_type="episodic", limit=100)
+        
+        # Get recent
+        recent = await memory_service.get_recent_memories(user_uuid, limit=5)
+        
+        return {
+            "total_memories": total,
+            "by_type": {
+                "semantic": len(semantic_memories),
+                "procedural": len(procedural_memories),
+                "episodic": len(episodic_memories)
+            },
+            "recently_added": len(recent),
+            "active_memories": total
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid user_id: {str(e)}")
+    except Exception as e:
+        # Log the actual error for debugging
+        print(f"STATS ERROR: {type(e).__name__}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get stats: {str(e)}")
