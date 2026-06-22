@@ -1,3 +1,4 @@
+import os
 import uuid
 from typing import List, Dict, Any
 import chromadb
@@ -5,6 +6,8 @@ from chromadb.config import Settings as ChromaSettings
 from core.config import settings
 from core.exceptions import StorageException, CircuitBreakerOpenException
 from datetime import datetime
+
+CHROMADB_PERSIST_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.chromadb'))
 
 
 class ChromaStorage:
@@ -20,15 +23,27 @@ class ChromaStorage:
     async def connect(self):
         try:
             if settings.ENVIRONMENT == "development":
-                self.client = chromadb.Client()
+                os.makedirs(CHROMADB_PERSIST_DIR, exist_ok=True)
+                chroma_settings = ChromaSettings(
+                    is_persistent=True,
+                    persist_directory=CHROMADB_PERSIST_DIR,
+                    allow_reset=True,
+                    anonymized_telemetry=False,
+                )
+                self.client = chromadb.Client(settings=chroma_settings)
             else:
-                self.client = chromadb.HttpClient(host=settings.CHROMADB_HOST, port=settings.CHROMADB_PORT, settings=ChromaSettings(allow_reset=True, anonymized_telemetry=False))
+                chroma_settings = ChromaSettings(allow_reset=True, anonymized_telemetry=False)
+                self.client = chromadb.HttpClient(host=settings.CHROMADB_HOST, port=settings.CHROMADB_PORT, settings=chroma_settings)
             self.client.heartbeat()
             self._circuit_failures = 0
             self._circuit_open = False
         except Exception as e:
             self._record_failure()
             raise StorageException(f"Failed to connect to ChromaDB: {e}")
+
+    async def _ensure_connected(self):
+        if self.client is None:
+            await self.connect()
 
     def _record_failure(self):
         self._circuit_failures += 1
@@ -56,6 +71,7 @@ class ChromaStorage:
         return self._collections[collection_name]
 
     async def add_memory(self, user_id: uuid.UUID, memory_id: uuid.UUID, content: str, embedding: List[float], metadata: Dict[str, Any] = None) -> str:
+        await self._ensure_connected()
         self._check_circuit()
         try:
             collection = self._get_collection(user_id)
@@ -69,10 +85,14 @@ class ChromaStorage:
             raise StorageException(f"Failed to add memory to ChromaDB: {e}")
 
     async def query_similar(self, user_id: uuid.UUID, query_embedding: List[float], top_k: int = 5, where: Dict[str, Any] = None) -> List[Dict[str, Any]]:
+        await self._ensure_connected()
         self._check_circuit()
         try:
             collection = self._get_collection(user_id)
-            results = collection.query(query_embeddings=[query_embedding], n_results=top_k, where=where, include=["documents", "metadatas", "distances"])
+            query_filter = {"status": "active"}
+            if where:
+                query_filter.update(where)
+            results = collection.query(query_embeddings=[query_embedding], n_results=top_k, where=query_filter, include=["documents", "metadatas", "distances"])
             memories = []
             if results["ids"] and results["ids"][0]:
                 for i, memory_id in enumerate(results["ids"][0]):
@@ -83,10 +103,14 @@ class ChromaStorage:
             raise StorageException(f"Failed to query ChromaDB: {e}")
 
     async def query_by_text(self, user_id: uuid.UUID, query_text: str, top_k: int = 5, where: Dict[str, Any] = None) -> List[Dict[str, Any]]:
+        await self._ensure_connected()
         self._check_circuit()
         try:
             collection = self._get_collection(user_id)
-            results = collection.query(query_texts=[query_text], n_results=top_k, where=where, include=["documents", "metadatas", "distances"])
+            query_filter = {"status": "active"}
+            if where:
+                query_filter.update(where)
+            results = collection.query(query_texts=[query_text], n_results=top_k, where=query_filter, include=["documents", "metadatas", "distances"])
             memories = []
             if results["ids"] and results["ids"][0]:
                 for i, memory_id in enumerate(results["ids"][0]):
