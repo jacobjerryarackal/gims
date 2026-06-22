@@ -17,8 +17,13 @@ class ChatRequest(BaseModel):
     conversation_id: Optional[str] = None
     memory_consent: bool = True
 
+class ConversationCreateRequest(BaseModel):
+    user_id: str = Field(...)
+    memory_consent: bool = True
+
 class ChatResponse(BaseModel):
     response: str
+    conversation_id: Optional[str] = None
     memories_used: List[Dict[str, Any]] = []
     extracted_memories: List[Dict[str, Any]] = []
     latency_ms: int
@@ -34,7 +39,7 @@ async def get_conversations(user_id: str = Query(...)):  # user_id must be provi
         raise HTTPException(status_code=500, detail=f"Failed to get conversations: {str(e)}")
 
 @router.post("/conversations")
-async def create_conversation(request: ChatRequest):
+async def create_conversation(request: ConversationCreateRequest):
     try:
         user_id = uuid.UUID(request.user_id)
         try:
@@ -133,6 +138,7 @@ async def send_message(request: ChatRequest):
         latency = int((datetime.utcnow() - start_time).total_seconds() * 1000)
         return ChatResponse(
             response=response_text,
+            conversation_id=str(conversation_id),
             memories_used=retrieved,
             extracted_memories=extracted,
             latency_ms=latency
