@@ -29,7 +29,7 @@ class ChatResponse(BaseModel):
     latency_ms: int
 
 @router.get("/conversations")
-async def get_conversations(user_id: str = Query(...)):  # user_id must be provided as query param
+async def get_conversations(user_id: str = Query(...)):
     """Get all conversations for a user."""
     try:
         user_uuid = uuid.UUID(user_id)
