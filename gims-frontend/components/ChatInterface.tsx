@@ -130,13 +130,21 @@ export default function ChatInterface() {
       const response = await sendMessage(activeConversation, content);
 
       // Update conversation ID if new
-      if (!activeConversation && response.message.conversation_id) {
-        setActiveConversation(response.message.conversation_id);
+      if (!activeConversation && response.conversation_id) {
+        setActiveConversation(response.conversation_id);
         loadConversations();
       }
 
       // Add assistant message
-      setMessages((prev) => [...prev, response.assistant_message]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `assistant-${Date.now()}`,
+          role: "assistant",
+          content: response.response,
+          created_at: new Date().toISOString(),
+        },
+      ]);
 
       // Show extracted memories
       if (response.extracted_memories && response.extracted_memories.length > 0) {
