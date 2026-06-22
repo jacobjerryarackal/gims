@@ -30,6 +30,7 @@ class ChatResponse(BaseModel):
 
 @router.get("/conversations")
 async def get_conversations(user_id: str = Query(...)):
+    print(f"DEBUG: get_conversations called with user_id={user_id}")
     """Get all conversations for a user."""
     try:
         user_uuid = uuid.UUID(user_id)
