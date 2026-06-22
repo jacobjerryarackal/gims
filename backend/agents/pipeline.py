@@ -101,22 +101,22 @@ class MemoryPipeline:
             print(f"PIPELINE STORE: Storing {len(evaluated)} evaluated memories")
             stored = []
             for e in evaluated:
-                print(f"PIPELINE STORE: Processing decision={e['decision']}")
-                if e["decision"] == "store":
-                    print(f"PIPELINE STORE: Creating memory for {e['candidate']['memory_text'][:50]}")
-                    source_turn_id = e["candidate"].get("source_turn_id")
-                    memory = await memory_service.create_memory(
-                        user_id=uuid.UUID(state["user_id"]),
-                        content=e["candidate"]["memory_text"],
-                        memory_type=e["candidate"]["memory_type"],
-                        relevance_score=e["relevance_score"],
-                        novelty_score=e["novelty_score"],
-                        accuracy_score=e["accuracy_score"],
-                        conversation_id=uuid.UUID(state["conversation_id"]),
-                        source_turn_id=uuid.UUID(source_turn_id) if source_turn_id else None,
-                    )
-                    stored.append({"id": str(memory.id), "content": memory.content})
-                    print(f"PIPELINE STORE: Memory created {memory.id}")
+                if e["decision"] not in ["store", "dedup"]:
+                    continue
+                print(f"PIPELINE STORE: Processing decision={e['decision']} for memory={e['candidate']['memory_text'][:50]}")
+                source_turn_id = e["candidate"].get("source_turn_id")
+                memory = await memory_service.create_memory(
+                    user_id=uuid.UUID(state["user_id"]),
+                    content=e["candidate"]["memory_text"],
+                    memory_type=e["candidate"]["memory_type"],
+                    relevance_score=e["relevance_score"],
+                    novelty_score=e["novelty_score"],
+                    accuracy_score=e["accuracy_score"],
+                    conversation_id=uuid.UUID(state["conversation_id"]),
+                    source_turn_id=uuid.UUID(source_turn_id) if source_turn_id else None,
+                )
+                stored.append({"id": str(memory.id), "content": memory.content})
+                print(f"PIPELINE STORE: Memory stored/merged {memory.id}")
             state["stored_memories"] = stored
             print(f"PIPELINE STORE: Total stored {len(stored)}")
         except Exception as e:
@@ -186,9 +186,18 @@ class MemoryPipeline:
 
     async def _retrieve_node(self, state: dict) -> dict:
         try:
-            results = await retriever_agent.retrieve(user_id=uuid.UUID(state["user_id"]), query=state["message"], top_k=settings.RETRIEVAL_TOP_K)
+            print(f"RETRIEVE NODE: user_id={state['user_id']}, query={state['message'][:50]}")
+            results = await retriever_agent.retrieve(
+                user_id=uuid.UUID(state["user_id"]),
+                query=state["message"],
+                top_k=settings.RETRIEVAL_TOP_K
+            )
+            print(f"RETRIEVE NODE: Found {len(results)} results")
+            for r in results:
+                print(f"  - {r.memory.content[:50]} (score: {r.similarity_score})")
             state["retrieved_memories"] = [{"id": str(r.memory.id), "content": r.memory.content, "memory_type": r.memory.memory_type, "similarity_score": r.similarity_score, "retrieval_method": r.retrieval_method, "explanation": r.explanation} for r in results]
         except Exception as e:
+            print(f"RETRIEVE NODE ERROR: {type(e).__name__}: {str(e)}")
             state["error"] = f"Retrieval failed: {str(e)}"
             state["retrieved_memories"] = []
         return state
