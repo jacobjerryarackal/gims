@@ -9,10 +9,34 @@ router = APIRouter(tags=["audit"])
 
 
 @router.get("")
-async def get_audit_logs(user_id: Optional[str] = Query(None), action: Optional[str] = Query(None), from_date: Optional[datetime] = Query(None), to_date: Optional[datetime] = Query(None), limit: int = 100):
+async def get_audit_logs(
+    user_id: str = Query(None),
+    operation: str = Query(None),
+    limit: int = Query(100),
+    offset: int = Query(0)
+):
+    """Get audit logs."""
     try:
-        user_uuid = uuid.UUID(user_id) if user_id else None
-        logs = await governance_service.get_audit_logs(user_id=user_uuid, action=action, limit=limit)
-        return {"logs": [{"id": str(log.id), "action": log.action, "actor": log.actor, "created_at": log.created_at, "reason": log.reason} for log in logs]}
+        if user_id:
+            user_uuid = uuid.UUID(user_id)
+            logs = await postgres_storage.get_audit_logs(user_id=user_uuid, limit=limit)
+        else:
+            logs = await postgres_storage.get_audit_logs(limit=limit)
+        
+        return {
+            "items": [
+                {
+                    "id": str(log.id),
+                    "user_id": str(log.user_id) if log.user_id else None,
+                    "action": log.action,
+                    "actor": log.actor,
+                    "reason": log.reason,
+                    "created_at": log.created_at.isoformat() if log.created_at else None
+                }
+                for log in logs
+            ],
+            "total": len(logs)
+        }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return {"items": [], "total": 0}
+
