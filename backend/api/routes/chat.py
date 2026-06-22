@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 import uuid
@@ -24,11 +24,10 @@ class ChatResponse(BaseModel):
     latency_ms: int
 
 @router.get("/conversations")
-async def get_conversations(user_id: str):
+async def get_conversations(user_id: str = Query(...)):  # user_id must be provided as query param
     """Get all conversations for a user."""
     try:
         user_uuid = uuid.UUID(user_id)
-        # You'll need to add this method to postgres_storage
         conversations = await postgres_storage.get_conversations_by_user(user_uuid)
         return {"conversations": conversations}
     except Exception as e:
@@ -42,20 +41,20 @@ async def create_conversation(request: ChatRequest):
             user = await governance_service.get_user(user_id)
         except UserNotFoundException:
             user = await governance_service.get_or_create_user(
-                email=f"user_{request.user_id}@example.com", 
+                email=f"user_{request.user_id}@example.com",
                 name="Demo User"
             )
             user_id = user.id
-        
+
         conversation = await postgres_storage.create_conversation(
             user_id=user_id,
             title="New Conversation",
             memory_consent=request.memory_consent
         )
         return {
-            "conversation_id": str(conversation.id), 
+            "conversation_id": str(conversation.id),
             "title": conversation.title,
-            "user_id": str(user_id)  # <-- Return the ACTUAL user_id
+            "user_id": str(user_id)
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to create conversation: {str(e)}")
