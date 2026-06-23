@@ -6,11 +6,13 @@ export interface Memory {
   conversation_id?: string;
   content: string;
   type: MemoryType;
+  status?: string;
   created_at: string;
   updated_at: string;
   last_retrieved_at?: string;
   retrieval_count: number;
   overall_score: number;
+  expires_at?: string | null;
 }
 
 export interface PaginatedMemories {
