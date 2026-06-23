@@ -141,7 +141,7 @@ export default function MemoryManager() {
           <Card>
             <CardHeader className="pb-2">
               <CardDescription>Semantic</CardDescription>
-              <CardTitle className="text-3xl">{stats.by_type.semantic || 0}</CardTitle>
+              <CardTitle className="text-3xl">{stats?.by_type?.semantic || 0}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-xs text-muted-foreground">Facts about who you are</div>
@@ -150,7 +150,7 @@ export default function MemoryManager() {
           <Card>
             <CardHeader className="pb-2">
               <CardDescription>Procedural</CardDescription>
-              <CardTitle className="text-3xl">{stats.by_type.procedural || 0}</CardTitle>
+              <CardTitle className="text-3xl">{stats?.by_type?.procedural || 0}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-xs text-muted-foreground">Preferences and habits</div>
@@ -159,7 +159,7 @@ export default function MemoryManager() {
           <Card>
             <CardHeader className="pb-2">
               <CardDescription>Episodic</CardDescription>
-              <CardTitle className="text-3xl">{stats.by_type.episodic || 0}</CardTitle>
+              <CardTitle className="text-3xl">{stats?.by_type?.episodic || 0}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-xs text-muted-foreground">Events and experiences</div>
@@ -313,7 +313,7 @@ export default function MemoryManager() {
                   <CardDescription>Memories by overall quality score</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {Object.entries(stats.by_score_range).map(([range, count]) => (
+                  {Object.entries(stats?.by_score_range || {}).map(([range, count]) => (
                     <div key={range}>
                       <div className="flex justify-between text-sm mb-1">
                         <span>{range}</span>
@@ -334,7 +334,7 @@ export default function MemoryManager() {
                   <CardDescription>Latest memories created</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  {stats.recently_added.slice(0, 5).map((memory) => (
+                  {(stats?.recently_added || []).slice(0, 5).map((memory) => (
                     <div
                       key={memory.id}
                       className="flex items-center gap-2 p-2 rounded-lg hover:bg-accent transition-colors"
@@ -358,7 +358,7 @@ export default function MemoryManager() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid gap-2 md:grid-cols-2">
-                    {stats.top_retrieved.slice(0, 6).map((memory) => (
+                    {(stats?.top_retrieved || []).slice(0, 6).map((memory) => (
                       <div
                         key={memory.id}
                         className="flex items-center gap-3 p-3 rounded-lg border"
