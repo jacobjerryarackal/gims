@@ -20,6 +20,78 @@ import {
 import { ChatMessage, Conversation, Memory, RetrievedMemory } from "@/types";
 import { sendMessage, getConversations, getConversationMessages, createConversation, deleteConversation } from "@/lib/api";
 import { formatRelativeDate, getScoreColor } from "@/lib/utils";
+import React from "react";
+
+const ChatMessageItem = React.memo(({ message, onMemorySelect }: { message: ChatMessage, onMemorySelect: (rm: RetrievedMemory) => void }) => {
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.2 }}
+    >
+      <div className="flex gap-3">
+        <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+          message.role === "user"
+            ? "bg-primary text-primary-foreground"
+            : "bg-muted border"
+        }`}>
+          {message.role === "user" ? (
+            <User className="h-4 w-4" />
+          ) : (
+            <Bot className="h-4 w-4" />
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-sm font-semibold">
+              {message.role === "user" ? "You" : "GIMS"}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {formatRelativeDate(message.created_at)}
+            </span>
+          </div>
+          <div className="prose prose-sm dark:prose-invert max-w-none markdown-body">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {message.content}
+            </ReactMarkdown>
+          </div>
+
+          {message.retrieved_memories && message.retrieved_memories.length > 0 && (
+            <div className="mt-3">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+                <MemoryStick className="h-3 w-3" />
+                <span>Retrieved {message.retrieved_memories.length} memory{message.retrieved_memories.length > 1 ? "ies" : "y"}</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {message.retrieved_memories.map((rm) => (
+                  <TooltipProvider key={rm.memory.id}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={() => onMemorySelect(rm)}
+                          className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs hover:bg-accent transition-colors"
+                        >
+                          <Brain className="h-3 w-3 text-primary" />
+                          <span className="truncate max-w-[200px]">{rm.memory.content}</span>
+                          <span className={`font-mono ${getScoreColor(rm.similarity_score)}`}>
+                            {(rm.similarity_score * 100).toFixed(0)}%
+                          </span>
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs"><p className="text-xs">{rm.explanation}</p></TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  );
+});
 
 export default function ChatInterface() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -110,7 +182,7 @@ export default function ChatInterface() {
     setExtractedMemories([]);
   };
 
-  const handleSend = async () => {
+  const handleSend = useCallback(async () => {
     if (!input.trim() || isLoading) return;
 
     const content = input.trim();
@@ -165,7 +237,7 @@ export default function ChatInterface() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [input, isLoading, activeConversation]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -308,93 +380,10 @@ export default function ChatInterface() {
             )}
 
             {messages.map((message, index) => (
-              <motion.div
-                key={message.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index === messages.length - 1 ? 0.1 : 0 }}
-              >
-                <div className="flex gap-3">
-                  <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                    message.role === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted border"
-                  }`}>
-                    {message.role === "user" ? (
-                      <User className="h-4 w-4" />
-                    ) : (
-                      <Bot className="h-4 w-4" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm font-semibold">
-                        {message.role === "user" ? "You" : "GIMS"}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {formatRelativeDate(message.created_at)}
-                      </span>
-                    </div>
-                    <div className="prose prose-sm dark:prose-invert max-w-none markdown-body">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {message.content}
-                      </ReactMarkdown>
-                    </div>
-
-                    {/* Retrieved Memories */}
-                    {message.retrieved_memories && message.retrieved_memories.length > 0 && (
-                      <div className="mt-3">
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-                          <MemoryStick className="h-3 w-3" />
-                          <span>Retrieved {message.retrieved_memories.length} memory{message.retrieved_memories.length > 1 ? "ies" : "y"}</span>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {message.retrieved_memories.map((rm) => (
-                            <TooltipProvider key={rm.memory.id}>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <button
-                                    onClick={() => setSelectedMemory(rm)}
-                                    className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs hover:bg-accent transition-colors"
-                                  >
-                                    <Brain className="h-3 w-3 text-primary" />
-                                    <span className="truncate max-w-[200px]">{rm.memory.content}</span>
-                                    <span className={`font-mono ${getScoreColor(rm.similarity_score)}`}>
-                                      {(rm.similarity_score * 100).toFixed(0)}%
-                                    </span>
-                                  </button>
-                                </TooltipTrigger>
-                                <TooltipContent side="top" className="max-w-xs">
-                                  <p className="text-xs">{rm.explanation}</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Metadata */}
-                    {message.metadata && (
-                      <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                        {message.metadata.processing_time_ms && (
-                          <span className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {message.metadata.processing_time_ms}ms
-                          </span>
-                        )}
-                        {message.metadata.tokens_used && (
-                          <span className="flex items-center gap-1">
-                            <Zap className="h-3 w-3" />
-                            {message.metadata.tokens_used} tokens
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                {index < messages.length - 1 && <Separator className="mt-6" />}
-              </motion.div>
+              <React.Fragment key={message.id}>
+                <ChatMessageItem message={message} onMemorySelect={setSelectedMemory} />
+                {index < messages.length - 1 && <Separator className="my-6" />}
+              </React.Fragment>
             ))}
 
             {isLoading && (
