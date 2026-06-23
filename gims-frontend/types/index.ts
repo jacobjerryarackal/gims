@@ -1,25 +1,27 @@
+export type MemoryType = "semantic" | "procedural" | "episodic";
+
 export interface Memory {
   id: string;
   user_id: string;
   content: string;
-  memory_type: "semantic" | "procedural" | "episodic";
+  type: MemoryType;              // was: memory_type
   status: string;
-  avg_score: number;
   created_at: string;
+  updated_at: string;
+  last_retrieved_at?: string;
+  retrieval_count: number;
+  overall_score: number;          // was: avg_score
   expires_at: string | null;
 }
 
 export interface PaginatedMemories {
-  memories: Memory[];
+  items: Memory[];               // was: memories
   total: number;
 }
 
 export interface RetrievedMemory {
-  id: string;
-  content: string;
-  memory_type: string;
+  memory: Memory;                // nested Memory object
   similarity_score: number;
-  retrieval_method: string;
   explanation: string;
 }
 
@@ -42,6 +44,7 @@ export interface Conversation {
   title: string;
   created_at: string;
   updated_at: string;
+  message_count: number;          // added
   memory_consent: boolean;
   is_active: boolean;
 }
@@ -75,12 +78,14 @@ export interface SystemMetrics {
 }
 
 export interface MemoryStats {
-  total_memories: number;
+  total: number;                  // was: total_memories
   by_type: {
     semantic: number;
     procedural: number;
     episodic: number;
   };
-  recently_added: number;
-  active_memories: number;
+  recently_added: Memory[];       // was: number — now array of Memory
+  top_retrieved: Memory[];        // added
+  by_score_range?: Record<string, number>;  // added
+  active_memories?: number;       // optional
 }
