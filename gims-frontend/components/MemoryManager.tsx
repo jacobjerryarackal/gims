@@ -49,27 +49,19 @@ export default function MemoryManager() {
   const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    const loadInitialStats = async () => {
+      try {
+        const statsData = await getMemoryStats();
+        setStats(statsData);
+      } catch (error) {
+        console.error("Failed to load stats:", error);
+      }
+    };
+    loadInitialStats();
+  }, [])
 
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const [memoriesData, statsData] = await Promise.all([
-        getMemories({ limit: 100 }),
-        getMemoryStats(),
-      ]);
-      setMemories(memoriesData.items);
-      setTotalCount(memoriesData.total);
-      setStats(statsData);
-    } catch (error) {
-      console.error("Failed to load data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSearch = async () => {
+  useEffect(() => {
+    const loadMemories = async () => {
     setLoading(true);
     try {
       const data = await getMemories({
@@ -80,11 +72,13 @@ export default function MemoryManager() {
       setMemories(data.items);
       setTotalCount(data.total);
     } catch (error) {
-      console.error("Search failed:", error);
+        console.error("Failed to load memories:", error);
     } finally {
       setLoading(false);
     }
-  };
+    };
+    loadMemories();
+  }, [searchQuery, typeFilter]);
 
   const handleUpdate = async () => {
     if (!editingMemory) return;
@@ -111,15 +105,6 @@ export default function MemoryManager() {
     }
   };
 
-  const filteredMemories = memories.filter((m) => {
-    if (typeFilter !== "all" && m.type !== typeFilter) return false;
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      return m.content.toLowerCase().includes(q);
-    }
-    return true;
-  });
-
   return (
     <div className="container py-6 max-w-6xl">
       <div className="flex items-center justify-between mb-6">
@@ -132,7 +117,7 @@ export default function MemoryManager() {
             View, edit, and manage what GIMS knows about you
           </p>
         </div>
-        <Button variant="outline" onClick={loadData}>
+        <Button variant="outline" onClick={() => {}}>
           <Sparkles className="mr-2 h-4 w-4" />
           Refresh
         </Button>
@@ -204,7 +189,6 @@ export default function MemoryManager() {
                 placeholder="Search memories..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 className="pl-9"
               />
             </div>
@@ -220,7 +204,6 @@ export default function MemoryManager() {
                 <SelectItem value="episodic">Episodic</SelectItem>
               </SelectContent>
             </Select>
-            <Button onClick={handleSearch}>Search</Button>
           </div>
 
           {/* Memory List */}
@@ -233,8 +216,8 @@ export default function MemoryManager() {
                     <Skeleton className="h-3 w-1/2" />
                   </CardContent>
                 </Card>
-              ))
-            ) : filteredMemories.length === 0 ? (
+              )) // Use memories directly, as they are now always filtered by the server
+            ) : memories.length === 0 ? (
               <div className="text-center py-12">
                 <Brain className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
                 <h3 className="text-lg font-semibold">No memories found</h3>
@@ -243,7 +226,7 @@ export default function MemoryManager() {
                 </p>
               </div>
             ) : (
-              filteredMemories.map((memory) => (
+              memories.map((memory) => (
                 <motion.div
                   key={memory.id}
                   layout
