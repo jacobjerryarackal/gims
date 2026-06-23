@@ -69,8 +69,8 @@ export default function MemoryManager() {
         type: typeFilter === "all" ? undefined : typeFilter,
         limit: 100,
       });
-      setMemories(data.items);
-      setTotalCount(data.total);
+      setMemories(data?.items || []); // Ensure we always set an array
+      setTotalCount(data?.total || 0); // Ensure we always set a number
     } catch (error) {
         console.error("Failed to load memories:", error);
     } finally {
