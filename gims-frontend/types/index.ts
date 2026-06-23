@@ -17,6 +17,11 @@ export interface Memory {
   is_active: boolean;
 }
 
+export interface PaginatedMemories {
+  items: Memory[];
+  total: number;
+}
+
 export interface RetrievedMemory {
   memory: Memory;
   similarity_score: number;
