@@ -1,5 +1,6 @@
 import uuid
-from typing import List
+from typing import List, Optional
+from datetime import datetime, timezone
 from services.retrieval_service import RetrievedMemory
 
 
@@ -10,6 +11,19 @@ class ExplainabilityAgent:
             explanation = self._generate_explanation(query, rm)
             explanations.append(explanation)
         return explanations
+
+    def _get_memory_age_string(self, created_at: Optional[datetime]) -> Optional[str]:
+        if not created_at:
+            return None
+        
+        # Ensure the created_at datetime is aware of its timezone (UTC)
+        if created_at.tzinfo is None:
+            created_at = created_at.replace(tzinfo=timezone.utc)
+
+        age = datetime.now(timezone.utc) - created_at
+        if age.days == 0: return "Recorded today."
+        if age.days == 1: return "Recorded yesterday."
+        return f"Recorded {age.days} days ago."
 
     def _generate_explanation(self, query: str, retrieved: RetrievedMemory) -> str:
         memory = retrieved.memory
@@ -34,15 +48,11 @@ class ExplainabilityAgent:
             parts.append("Found through meaning-based search.")
         elif method == "keyword":
             parts.append("Found through keyword matching.")
-        if memory.created_at:
-            from datetime import datetime
-            age = (datetime.utcnow() - memory.created_at).days
-            if age == 0:
-                parts.append("Recorded today.")
-            elif age == 1:
-                parts.append("Recorded yesterday.")
-            else:
-                parts.append(f"Recorded {age} days ago.")
+        
+        age_string = self._get_memory_age_string(memory.created_at)
+        if age_string:
+            parts.append(age_string)
+
         if memory.access_count > 0:
             parts.append(f"Retrieved {memory.access_count} times before.")
         return " ".join(parts)
