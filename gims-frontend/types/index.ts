@@ -1,30 +1,25 @@
 export interface Memory {
   id: string;
   user_id: string;
-  type: "semantic" | "procedural" | "episodic";
   content: string;
-  relevance_score: number;
-  novelty_score: number;
-  accuracy_score: number;
-  overall_score: number;
+  memory_type: "semantic" | "procedural" | "episodic";
+  status: string;
+  avg_score: number;
   created_at: string;
-  updated_at: string;
   expires_at: string | null;
-  retrieval_count: number;
-  last_retrieved_at: string | null;
-  conversation_id: string | null;
-  source_message: string | null;
-  is_active: boolean;
 }
 
 export interface PaginatedMemories {
-  items: Memory[];
+  memories: Memory[];
   total: number;
 }
 
 export interface RetrievedMemory {
-  memory: Memory;
+  id: string;
+  content: string;
+  memory_type: string;
   similarity_score: number;
+  retrieval_method: string;
   explanation: string;
 }
 
@@ -43,67 +38,49 @@ export interface ChatMessage {
 
 export interface Conversation {
   id: string;
+  user_id: string;
   title: string;
   created_at: string;
   updated_at: string;
-  message_count: number;
-  is_memory_enabled: boolean;
+  memory_consent: boolean;
+  is_active: boolean;
 }
 
 export interface AuditLog {
   id: string;
-  operation: "create" | "update" | "delete" | "retrieve" | "evaluate" | "extract";
-  memory_id: string | null;
-  user_id: string;
-  details: Record<string, unknown>;
+  user_id: string | null;
+  action: string;
+  actor: string;
+  reason: string;
   created_at: string;
-  ip_address: string | null;
-  user_agent: string | null;
 }
 
 export interface HITLReview {
   id: string;
-  memory_id: string;
-  content: string;
-  type: string;
-  scores: {
-    relevance: number;
-    novelty: number;
-    accuracy: number;
-  };
-  status: "pending" | "approved" | "rejected";
-  reviewer_notes: string | null;
+  memory_content: string;
+  confidence_score: number;
+  reason: string;
+  status: string;
   created_at: string;
-  reviewed_at: string | null;
 }
 
 export interface SystemMetrics {
-  total_memories: number;
-  total_conversations: number;
-  total_messages: number;
-  avg_retrieval_time_ms: number;
+  retrieval_accuracy: number;
   memory_precision: number;
   memory_recall: number;
   duplicate_detection_rate: number;
-  pending_reviews: number;
-  api_health: {
-    status: "healthy" | "degraded" | "down";
-    latency_ms: number;
-  };
-  db_health: {
-    status: "healthy" | "degraded" | "down";
-    latency_ms: number;
-  };
-  vector_db_health: {
-    status: "healthy" | "degraded" | "down";
-    latency_ms: number;
-  };
+  avg_latency_ms: number;
+  memory_count: number;
+  active_users: number;
 }
 
 export interface MemoryStats {
-  by_type: Record<string, number>;
-  by_score_range: Record<string, number>;
-  retrieval_frequency: Array<{ date: string; count: number }>;
-  top_retrieved: Memory[];
-  recently_added: Memory[];
+  total_memories: number;
+  by_type: {
+    semantic: number;
+    procedural: number;
+    episodic: number;
+  };
+  recently_added: number;
+  active_memories: number;
 }
