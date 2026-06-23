@@ -34,11 +34,11 @@ app.add_middleware(
 app.middleware("http")(logging_middleware)
 
 # Routes
-app.include_router(chat.router, prefix="/api/chat")
-app.include_router(memories.router, prefix="/api/memories")
-app.include_router(hitl.router, prefix="/api/hitl")
-app.include_router(audit.router, prefix="/api/audit")
-app.include_router(metrics.router, prefix="/api/metrics")
+app.include_router(chat.router, prefix="/api/v1/chat")
+app.include_router(memories.router, prefix="/api/v1/memories")
+app.include_router(hitl.router, prefix="/api/v1/hitl")
+app.include_router(audit.router, prefix="/api/v1/audit")
+app.include_router(metrics.router, prefix="/api/v1/metrics")
 
 @app.get("/health")
 async def health_check():
