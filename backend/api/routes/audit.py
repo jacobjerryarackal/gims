@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Query
 from typing import Optional
 import uuid
 from datetime import datetime
-
+from storage.postgres import postgres_storage
 from services.governance_service import governance_service
 
 router = APIRouter(tags=["audit"])
@@ -11,7 +11,7 @@ router = APIRouter(tags=["audit"])
 @router.get("")
 async def get_audit_logs(
     user_id: str = Query(None),
-    operation: str = Query(None),
+    action: str = Query(None),
     limit: int = Query(100),
     offset: int = Query(0)
 ):
@@ -19,10 +19,10 @@ async def get_audit_logs(
     try:
         if user_id:
             user_uuid = uuid.UUID(user_id)
-            logs = await postgres_storage.get_audit_logs(user_id=user_uuid, limit=limit)
+            logs = await postgres_storage.get_audit_logs(user_id=user_uuid, action=action, limit=limit)
         else:
-            logs = await postgres_storage.get_audit_logs(limit=limit)
-        
+            logs = await postgres_storage.get_audit_logs(action=action, limit=limit)
+
         return {
             "items": [
                 {
