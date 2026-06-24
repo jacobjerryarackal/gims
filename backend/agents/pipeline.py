@@ -59,6 +59,7 @@ class MemoryPipeline:
 
     async def _capture_node(self, state: dict) -> dict:
         try:
+            print("EXTRACTED:", state.get("extracted_memories", []))
             print(f"PIPELINE CAPTURE: message={state['message'][:50]}...")
             turn = await postgres_storage.create_turn(conversation_id=state["conversation_id"], role=state["role"], content=state["message"])
             print(f"PIPELINE CAPTURE: Created turn {turn.id}")
@@ -76,6 +77,7 @@ class MemoryPipeline:
 
     async def _evaluate_node(self, state: dict) -> dict:
         try:
+            print("EVALUATED:", state.get("evaluated_memories", []))
             candidates = [CandidateMemory(**c) for c in state.get("extracted_memories", [])]
             print(f"PIPELINE EVALUATE: Evaluating {len(candidates)} candidates")
             if not candidates:
@@ -97,6 +99,7 @@ class MemoryPipeline:
 
     async def _store_node(self, state: dict) -> dict:
         try:
+            print("STORED:", state.get("stored_memories", []))
             evaluated = state.get("evaluated_memories", [])
             print(f"PIPELINE STORE: Storing {len(evaluated)} evaluated memories")
             stored = []
