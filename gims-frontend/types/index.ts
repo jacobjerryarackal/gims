@@ -3,14 +3,15 @@ export type MemoryType = "semantic" | "procedural" | "episodic";
 export interface Memory {
   id: string;
   user_id: string;
+  conversation_id?: string;
   content: string;
-  type: MemoryType;              // was: memory_type
+  type: MemoryType;
   status: string;
   created_at: string;
   updated_at: string;
   last_retrieved_at?: string;
   retrieval_count: number;
-  overall_score: number;          // was: avg_score
+  overall_score: number;
   expires_at: string | null;
 }
 
