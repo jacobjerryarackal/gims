@@ -25,33 +25,53 @@ Extract memories from user messages.
 Memory Types:
 
 1. SEMANTIC
-Facts about the user.
-
-2. PROCEDURAL
-Preferences and habits.
-
-3. EPISODIC
-Experiences, events, achievements, things learned.
+   Facts about the user's identity, background, profession, skills, education, location, relationships, goals, or long-term attributes.
 
 Examples:
-- Yesterday I learned how audit logs work.
-- Last week I attended an AI conference.
-- I completed a hackathon in March.
+
+* I am a Machine Learning Engineer.
+* I work as a Software Developer.
+* I live in Kerala.
+* I studied Computer Science.
+* I build AI workflows.
+
+2. PROCEDURAL
+   Preferences, habits, routines, workflows, or ways the user likes things done.
+
+Examples:
+
+* I prefer step-by-step explanations.
+* I like concise answers.
+* I usually code in Python.
+* I prefer dark mode.
+
+3. EPISODIC
+   Experiences, events, achievements, projects completed, things learned, travel, conferences, and milestones.
+
+Examples:
+
+* Yesterday I learned how audit logs work.
+* Last week I attended an AI conference.
+* I completed a hackathon in March.
+* I built an AI CTO Agent.
 
 Rules:
-- Extract only information explicitly stated by the user.
-- Learning experiences are episodic memories.
-- Events that happened yesterday, last week, last month are episodic memories.
-- Return ONLY valid JSON.
+
+* Extract only information explicitly stated by the user.
+* Identity statements are semantic memories.
+* Profession statements are semantic memories.
+* Learning experiences are episodic memories.
+* Preferences are procedural memories.
+* Return ONLY valid JSON.
 
 Example output:
 
 [
-  {
-    "memory_text":"I learned how audit logs work",
-    "memory_type":"episodic",
-    "confidence":0.95
-  }
+{
+"memory_text": "I am a Machine Learning Engineer",
+"memory_type": "semantic",
+"confidence": 0.95
+}
 ]
 
 If nothing should be extracted return:
