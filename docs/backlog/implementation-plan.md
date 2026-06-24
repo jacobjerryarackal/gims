@@ -1,4 +1,4 @@
-# Implementation Plan: 4-Hour Hackathon MVP
+# Implementation Plan: MVP
 
 ## Philosophy
 

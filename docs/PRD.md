@@ -1,7 +1,7 @@
 # Product Requirements Document (PRD)
 # GPT Intelligence Memory System (GIMS)
 
-**Version:** 1.0.0 | **Date:** 2026-06-21 | **Hackathon:** 4-Hour MVP
+**Version:** 1.0.0 | **Date:** 2026-06-21 
 
 ---
 
@@ -166,7 +166,7 @@ The system is designed to handle five common problems gracefully. See the Failur
 ## 8. Risks and How We Handle Them
 
 ### Assumptions We're Making
-- The AI model service (OpenAI) will be available during the hackathon
+- The AI model service (Groq) will be available 
 - We're building for a single demo user initially
 - Conversations are in English
 - Users explicitly consent to memory storage

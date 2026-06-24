@@ -12,7 +12,7 @@ Our memory system needs two different kinds of data storage:
 
 2. **Vector storage** for semantic search. When a user asks "What should I learn next?" we need to find memories that are conceptually related — even if they don't use the exact same words. This requires storing mathematical representations (embeddings) of text and searching by similarity.
 
-The AI PR Review Agent uses a single managed database (Tiger Cloud) that handles both structured and vector data. For our 4-hour hackathon, we need tools that are simpler to set up but follow the same design principles.
+The AI PR Review Agent uses a single managed database (Tiger Cloud) that handles both structured and vector data. For our project, we need tools that are simpler to set up but follow the same design principles.
 
 ## Decision
 

@@ -105,7 +105,7 @@ After evaluation, each memory follows one of four paths based on its quality sco
 |-------------|------------------------|
 | Celery task chains | No built-in checkpointing; harder to visualize the flow |
 | Pure async/await | No built-in state management; we'd have to build our own |
-| Prefect or Dagster | Too heavy for a 4-hour hackathon |
+| Prefect or Dagster | Too heavy for this project |
 | Custom state machine | We'd be reinventing what LangGraph already does well |
 
 ## Related Documents
