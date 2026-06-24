@@ -279,7 +279,7 @@ export default function ChatInterface() {
                   </div>
                 )}
                 {conversations.map((conv) => (
-                  <button
+                  <div
                     key={conv.id}
                     onClick={() => handleSelectConversation(conv.id)}
                     className={`w-full text-left rounded-lg px-3 py-2.5 text-sm transition-colors group relative ${
@@ -297,13 +297,13 @@ export default function ChatInterface() {
                       <span>•</span>
                       <span>{formatRelativeDate(conv.updated_at)}</span>
                     </div>
-                    <button
+                    <div
                       onClick={(e) => handleDeleteConversation(conv.id, e)}
                       className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-destructive/20"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </button>
+                    </div>
+                  </div>
                 ))}
               </div>
             </ScrollArea>
