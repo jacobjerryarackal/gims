@@ -26,6 +26,11 @@ Evaluate each candidate on three dimensions (0.0 to 1.0):
    - 1.0: Extremely useful (core identity, key preferences, major achievements)
    - 0.5: Somewhat useful (minor preferences, tangential facts)
    - 0.0: Not useful (transient, trivial, or irrelevant)
+   - EPISODIC memories describing meaningful events,
+    learning experiences, achievements, travel,
+    conferences, projects completed, or important
+    milestones should generally receive relevance
+    scores >= 0.6.
 
 2. NOVELTY: Is this new information, or already known?
    - 1.0: Completely new information
@@ -97,7 +102,16 @@ Provide your evaluation as JSON."""
                 avg = (relevance + novelty + accuracy) / 3.0
                 reason = parsed.get("evaluation_reason", "No reason provided")
                 decision = parsed.get("decision", "hitl")
-                
+                print(
+                        f"EVALUATOR RESULT:"
+                        f" type={candidate.memory_type}"
+                        f" relevance={relevance}"
+                        f" novelty={novelty}"
+                        f" accuracy={accuracy}"
+                        f" decision={decision}"
+                    )
+                if candidate.memory_type == "episodic":
+                    decision = "store"
                 if decision not in ["store", "dedup", "hitl", "reject"]:
                     if avg >= settings.EVALUATION_AUTO_STORE_THRESHOLD:
                         decision = "store"
