@@ -24,14 +24,14 @@ app = FastAPI(
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # REGISTER the logging middleware
-app.middleware("http")(logging_middleware)
+# app.middleware("http")(logging_middleware)
 
 # Routes
 app.include_router(chat.router, prefix="/api/v1/chat")
