@@ -68,9 +68,9 @@ export default function AuditLogViewer() {
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       return (
-        log.operation.toLowerCase().includes(q) ||
-        log.memory_id?.toLowerCase().includes(q) ||
-        JSON.stringify(log.details).toLowerCase().includes(q)
+        log.action.toLowerCase().includes(q) ||
+        log.user_id?.toLowerCase().includes(q) ||
+        log.reason.toLowerCase().includes(q)
       );
     }
     return true;
@@ -99,7 +99,7 @@ export default function AuditLogViewer() {
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-6 mb-6">
         {Object.entries(operationConfig).map(([op, config]) => {
-          const count = logs.filter((l) => l.operation === op).length;
+          const count = logs.filter((l) => l.action === op).length;
           return (
             <Card key={op}>
               <CardContent className="p-4">
@@ -179,7 +179,7 @@ export default function AuditLogViewer() {
                 </div>
               ) : (
                 filteredLogs.map((log, i) => {
-                  const config = operationConfig[log.operation] || operationConfig.extract;
+                  const config =operationConfig[ log.action as keyof typeof operationConfig ] || operationConfig.extract;
                   return (
                     <motion.div
                       key={log.id}
@@ -195,12 +195,14 @@ export default function AuditLogViewer() {
                         </Badge>
                       </div>
                       <div className="text-sm">
-                        <pre className="text-xs bg-muted p-2 rounded overflow-x-auto">
-                          {JSON.stringify(log.details, null, 2)}
-                        </pre>
+                        <div className="text-sm">
+                          {log.reason}
+                        </div>
                       </div>
                       <div className="text-xs font-mono text-muted-foreground">
-                        {log.memory_id ? log.memory_id.slice(0, 8) + "..." : "—"}
+                        {log.user_id
+                          ? log.user_id.slice(0, 8) + "..."
+                          : "—"}
                       </div>
                       <div className="text-xs text-muted-foreground flex items-center gap-1">
                         <Clock className="h-3 w-3" />
