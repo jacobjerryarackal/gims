@@ -36,7 +36,7 @@ class Memory(Base):
 
     __table_args__ = (
         CheckConstraint(
-            "memory_type != 'episodic' OR (event_date IS NOT NULL AND participants IS NOT NULL)",
+            "memory_type IN ('semantic', 'procedural', 'episodic')",
             name="chk_episodic_fields"
         ),
     )
