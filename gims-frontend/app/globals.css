@@ -150,3 +150,8 @@
 .markdown-body th {
   background: var(--color-muted);
 }
+
+
+.container {
+  @apply mx-auto max-w-7xl px-6 lg:px-8;
+}
