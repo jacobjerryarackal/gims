@@ -38,5 +38,6 @@ async def get_audit_logs(
             "total": len(logs)
         }
     except Exception as e:
-        return {"items": [], "total": 0}
+        print("AUDIT ERROR:", e)
+        raise e
 
