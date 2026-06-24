@@ -151,6 +151,12 @@ class MemoryPipeline:
                 if e["decision"] in ["store", "dedup"]:
                     result = await dedup_service.check_duplicates(user_id=uuid.UUID(state["user_id"]), content=e["candidate"]["memory_text"], memory_type=e["candidate"]["memory_type"])
                     if result["is_duplicate"] and result["action"] == "merge":
+                        await postgres_storage.create_audit_log(
+                            user_id=uuid.UUID(state["user_id"]),
+                            action="dedup",
+                            actor="system",
+                            reason="Duplicate memory detected"
+                        )
                         await dedup_service.merge_memories(existing_memory=result["existing_memory"], new_content=e["candidate"]["memory_text"], new_scores={"relevance": e["relevance_score"], "novelty": e["novelty_score"], "accuracy": e["accuracy_score"]})
                     elif not result["is_duplicate"]:
                         memory = await memory_service.create_memory(user_id=uuid.UUID(state["user_id"]), content=e["candidate"]["memory_text"], memory_type=e["candidate"]["memory_type"], relevance_score=e["relevance_score"], novelty_score=e["novelty_score"], accuracy_score=e["accuracy_score"], conversation_id=uuid.UUID(state["conversation_id"]))
@@ -185,12 +191,19 @@ class MemoryPipeline:
         return state
 
     async def _retrieve_node(self, state: dict) -> dict:
+        
         try:
             print(f"RETRIEVE NODE: user_id={state['user_id']}, query={state['message'][:50]}")
             results = await retriever_agent.retrieve(
                 user_id=uuid.UUID(state["user_id"]),
                 query=state["message"],
                 top_k=settings.RETRIEVAL_TOP_K
+            )
+            await postgres_storage.create_audit_log(
+                user_id=uuid.UUID(state["user_id"]),
+                action="retrieve",
+                actor="system",
+                reason=f"Retrieved {len(results)} memories"
             )
             print(f"RETRIEVE NODE: Found {len(results)} results")
             for r in results:
