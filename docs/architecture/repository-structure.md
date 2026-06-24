@@ -121,7 +121,7 @@ gims/                           ← Main project folder
 │   │   ├── MemoryCard.tsx        ← Single memory display
 │   │   ├── MemoryManager.tsx     ← CRUD operations UI
 │   │   ├── ExplainabilityPanel.tsx ← Why was this retrieved?
-│   │   └── HealthDashboard.tsx   ← System metrics display
+│   │   
 │   │
 │   ├── lib/                      ← Shared utilities
 │   │   ├── api.ts                ← Typed API client
