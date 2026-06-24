@@ -23,6 +23,12 @@ class MemoryService:
         avg_score = (relevance_score + novelty_score + accuracy_score) / 3.0
         memory = Memory(user_id=user_id, conversation_id=conversation_id, memory_type=memory_type, content=content, relevance_score=relevance_score, novelty_score=novelty_score, accuracy_score=accuracy_score, avg_score=avg_score, status="active", source_turn_id=source_turn_id, event_date=event_date, participants=participants)
         memory = await postgres_storage.create_memory(memory)
+        await postgres_storage.create_audit_log(
+            user_id=user_id,
+            action="create",
+            actor="system",
+            reason=f"Created {memory_type} memory"
+        )
         try:
             embedding = await embedding_service.generate_embedding(content)
             chroma_id = await chroma_storage.add_memory(user_id=user_id, memory_id=memory.id, content=content, embedding=embedding, metadata={"memory_type": memory_type, "avg_score": float(avg_score), "status": "active"})
