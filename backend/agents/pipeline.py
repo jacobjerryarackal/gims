@@ -65,6 +65,12 @@ class MemoryPipeline:
             print(f"PIPELINE CAPTURE: Created turn {turn.id}")
             candidates = await extractor_agent.extract(conversation_text=state["message"], turn_id=str(turn.id))
             print(f"PIPELINE CAPTURE: Extractor returned {len(candidates)} candidates")
+            await postgres_storage.create_audit_log(
+                user_id=uuid.UUID(state["user_id"]),
+                action="extract",
+                actor="system",
+                reason=f"Extracted {len(candidates)} memories"
+            )
             for c in candidates:
                 print(f"  - {c.memory_text[:50]} ({c.memory_type})")
             state["extracted_memories"] = [c.to_dict() for c in candidates]
@@ -88,6 +94,12 @@ class MemoryPipeline:
             existing_texts = [m.content for m in existing]
             evaluated = await evaluator_agent.evaluate_batch(candidates, existing_texts)
             print(f"PIPELINE EVALUATE: Evaluator returned {len(evaluated)} results")
+            await postgres_storage.create_audit_log(
+                user_id=uuid.UUID(state["user_id"]),
+                action="evaluate",
+                actor="system",
+                reason=f"Evaluated {len(evaluated)} memories"
+            )
             for e in evaluated:
                 print(f"  - decision={e.decision}, avg_score={e.avg_score:.2f}, reason={e.evaluation_reason[:50]}")
             state["evaluated_memories"] = [{"candidate": e.candidate.to_dict(), "relevance_score": e.relevance_score, "novelty_score": e.novelty_score, "accuracy_score": e.accuracy_score, "avg_score": e.avg_score, "evaluation_reason": e.evaluation_reason, "decision": e.decision} for e in evaluated]
