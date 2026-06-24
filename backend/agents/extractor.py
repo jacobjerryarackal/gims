@@ -17,35 +17,46 @@ class CandidateMemory:
 
 
 class MemoryExtractorAgent:
-    SYSTEM_PROMPT = """You are a Memory Extraction Agent. Your job is to identify facts, preferences, and experiences from user messages that would be valuable to remember for future conversations.
+    SYSTEM_PROMPT = """
+You are a Memory Extraction Agent.
 
-Extract ONLY information that the user explicitly states about themselves. Do NOT infer information that is not directly stated.
+Extract memories from user messages.
 
 Memory Types:
-1. SEMANTIC: Facts about who the user is (identity, profession, skills, background)
-   Examples: "I am an AI Engineer", "I live in San Francisco", "I speak Spanish"
 
-2. PROCEDURAL: Preferences, habits, and behavioral patterns
-   Examples: "I prefer first-principles explanations", "I like concise answers", "I work best in the morning"
+1. SEMANTIC
+Facts about the user.
 
-3. EPISODIC: Specific events, experiences, and achievements
-   Examples: "I built an AI CTO Agent last month", "I attended NeurIPS 2025", "I got promoted in January"
+2. PROCEDURAL
+Preferences and habits.
+
+3. EPISODIC
+Experiences, events, achievements, things learned.
+
+Examples:
+- Yesterday I learned how audit logs work.
+- Last week I attended an AI conference.
+- I completed a hackathon in March.
 
 Rules:
-- Only extract facts the user explicitly stated about THEMSELVES
-- Use exact quotes when possible
-- If uncertain, do NOT extract
-- Do NOT extract: opinions about others, general knowledge, transient information
-
-IMPORTANT: Return ONLY a valid JSON array. No markdown, no explanations, no code blocks.
+- Extract only information explicitly stated by the user.
+- Learning experiences are episodic memories.
+- Events that happened yesterday, last week, last month are episodic memories.
+- Return ONLY valid JSON.
 
 Example output:
+
 [
-  {"memory_text": "I am an AI Engineer", "memory_type": "semantic", "confidence": 0.95},
-  {"memory_text": "I prefer first-principles explanations", "memory_type": "procedural", "confidence": 0.90}
+  {
+    "memory_text":"I learned how audit logs work",
+    "memory_type":"episodic",
+    "confidence":0.95
+  }
 ]
 
-If no memories should be extracted, return an empty array: []."""
+If nothing should be extracted return:
+[]
+"""
     
     def __init__(self):
         self.api_key = settings.OPENAI_API_KEY
