@@ -79,7 +79,7 @@ export default function AuditLogViewer() {
   const totalPages = Math.ceil(totalCount / pageSize);
 
   return (
-    <div className="container py-6 max-w-6xl">
+    <div className="container mx-auto py-6 max-w-7xl">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
