@@ -8,7 +8,7 @@ from utils.embeddings import embedding_service
 from utils.telemetry import telemetry
 from core.exceptions import StorageException
 from services.dedup_service import dedup_service
-
+from datetime import datetime, timezone
 
 class MemoryService:
     async def create_memory(self, user_id: uuid.UUID, content: str, memory_type: str, relevance_score: float, novelty_score: float, accuracy_score: float, conversation_id: uuid.UUID = None, source_turn_id: uuid.UUID = None, event_date: datetime = None, participants: List[str] = None, dedup: bool = True) -> Memory:
@@ -21,7 +21,19 @@ class MemoryService:
                 return result["existing_memory"]
 
         avg_score = (relevance_score + novelty_score + accuracy_score) / 3.0
+        if memory_type == "episodic":
+            if event_date is None:
+                event_date = datetime.now(timezone.utc)
+
+            if participants is None:
+                participants = []
         memory = Memory(user_id=user_id, conversation_id=conversation_id, memory_type=memory_type, content=content, relevance_score=relevance_score, novelty_score=novelty_score, accuracy_score=accuracy_score, avg_score=avg_score, status="active", source_turn_id=source_turn_id, event_date=event_date, participants=participants)
+        print(
+            f"STORE DEBUG: "
+            f"type={memory_type}, "
+            f"event_date={event_date}, "
+            f"participants={participants}"
+        )
         memory = await postgres_storage.create_memory(memory)
         await postgres_storage.create_audit_log(
             user_id=user_id,
