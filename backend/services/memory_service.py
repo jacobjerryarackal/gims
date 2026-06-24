@@ -63,6 +63,13 @@ class MemoryService:
         if status is not None: updates["status"] = status
         if expires_at is not None: updates["expires_at"] = expires_at
         memory = await postgres_storage.update_memory(memory_id, **updates)
+        await postgres_storage.create_audit_log(
+            user_id=memory.user_id,
+            memory_id=memory_id,
+            action="update",
+            actor="user",
+            reason="Memory updated"
+        )
         if content:
             try:
                 await chroma_storage.update_memory(user_id=memory.user_id, memory_id=memory_id, content=content)
@@ -78,6 +85,13 @@ class MemoryService:
             await chroma_storage.update_memory(user_id=memory.user_id, memory_id=memory_id, metadata={"status": "deleted"})
         except Exception as e:
             telemetry.log_memory_operation("chroma_delete_failed", user_id=memory.user_id, memory_id=memory_id, details={"error": str(e)})
+        await postgres_storage.create_audit_log(
+                user_id=memory.user_id,
+                memory_id=memory_id,
+                action="delete",
+                actor="user",
+                reason="Memory deleted"
+            )
         telemetry.log_memory_operation("deleted", user_id=memory.user_id, memory_id=memory_id)
 
     async def get_memory_count(self, user_id: uuid.UUID) -> int:
