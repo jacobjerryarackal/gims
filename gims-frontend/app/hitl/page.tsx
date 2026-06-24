@@ -17,7 +17,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
 } from "@/components/ui/dialog";
 import { HITLReview } from "@/types";
-import { getPendingReviews, reviewMemory } from "@/lib/api";
+import { getHITLQueue, reviewHITLItem } from "@/lib/api";
 import { formatDate, getScoreColor, getScoreBg } from "@/lib/utils";
 
 export default function HITLPage() {
@@ -34,8 +34,8 @@ export default function HITLPage() {
   const loadReviews = async () => {
     setLoading(true);
     try {
-      const data = await getPendingReviews();
-      setReviews(data);
+      const data = await getHITLQueue();
+      setReviews(data.items);
     } catch (error) {
       console.error("Failed to load reviews:", error);
     } finally {
@@ -47,7 +47,13 @@ export default function HITLPage() {
     if (!selectedReview) return;
     setProcessing(true);
     try {
-      await reviewMemory(selectedReview.id, status, reviewerNotes);
+      await reviewHITLItem(
+        selectedReview.id,
+        status === "approved"
+          ? "approve"
+          : "reject",
+        reviewerNotes
+      );
       setReviews((prev) => prev.filter((r) => r.id !== selectedReview.id));
       setSelectedReview(null);
       setReviewerNotes("");
@@ -126,13 +132,16 @@ export default function HITLPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-2">
                         <Badge variant="outline" className="text-xs capitalize">
-                          {review.type}
+                          {review.status}
                         </Badge>
-                        <Badge variant="outline" className={`text-xs ${getScoreBg(review.scores.overall || 0.5)} ${getScoreColor(review.scores.overall || 0.5)}`}>
-                          Score: {((review.scores.overall || 0.5) * 100).toFixed(0)}%
+                        <Badge
+                          variant="outline"
+                          className={`text-xs ${getScoreBg(review.confidence_score || 0.5)} ${getScoreColor(review.confidence_score || 0.5)}`}
+                        >
+                          Confidence: {((review.confidence_score || 0.5) * 100).toFixed(0)}%
                         </Badge>
                       </div>
-                      <p className="text-sm font-medium">{review.content}</p>
+                      <p className="text-sm font-medium">{review.memory_content}</p>
                       <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
                         <span>Created {formatDate(review.created_at)}</span>
                       </div>
@@ -170,26 +179,14 @@ export default function HITLPage() {
           {selectedReview && (
             <div className="space-y-4">
               <div className="rounded-lg bg-muted p-4">
-                <p className="text-sm font-medium">{selectedReview.content}</p>
+                <p className="text-sm font-medium">{selectedReview.memory_content}</p>
               </div>
-              <div className="grid grid-cols-3 gap-2">
-                <div className="text-center p-2 rounded-lg border">
-                  <div className="text-xs text-muted-foreground">Relevance</div>
-                  <div className={`font-mono font-bold ${getScoreColor(selectedReview.scores.relevance)}`}>
-                    {(selectedReview.scores.relevance * 100).toFixed(0)}%
-                  </div>
+              <div className="rounded-lg border p-3">
+                <div className="text-sm text-muted-foreground">
+                  Confidence Score
                 </div>
-                <div className="text-center p-2 rounded-lg border">
-                  <div className="text-xs text-muted-foreground">Novelty</div>
-                  <div className={`font-mono font-bold ${getScoreColor(selectedReview.scores.novelty)}`}>
-                    {(selectedReview.scores.novelty * 100).toFixed(0)}%
-                  </div>
-                </div>
-                <div className="text-center p-2 rounded-lg border">
-                  <div className="text-xs text-muted-foreground">Accuracy</div>
-                  <div className={`font-mono font-bold ${getScoreColor(selectedReview.scores.accuracy)}`}>
-                    {(selectedReview.scores.accuracy * 100).toFixed(0)}%
-                  </div>
+                <div className="text-lg font-bold">
+                  {(selectedReview.confidence_score * 100).toFixed(0)}%
                 </div>
               </div>
               <Textarea
