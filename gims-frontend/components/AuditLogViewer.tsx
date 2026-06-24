@@ -97,7 +97,7 @@ export default function AuditLogViewer() {
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-6 mb-6">
+      <div className="grid gap-4 md:grid-cols-6 mb-6 justify-center">
         {Object.entries(operationConfig).map(([op, config]) => {
           const count = logs.filter((l) => l.action === op).length;
           return (
@@ -152,7 +152,7 @@ export default function AuditLogViewer() {
       <Card>
         <CardContent className="p-0">
           <ScrollArea className="h-[600px]">
-            <div className="min-w-[800px]">
+            <div className="w-full">
               <div className="grid grid-cols-[120px_1fr_120px_200px] gap-4 px-4 py-3 border-b bg-muted/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 <div>Operation</div>
                 <div>Details</div>
