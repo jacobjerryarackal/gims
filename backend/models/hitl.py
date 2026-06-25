@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 from sqlalchemy import Column, String, Numeric, DateTime, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
 from models import Base
 
 
@@ -17,3 +18,6 @@ class HITLQueue(Base):
     reviewer_notes = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     reviewed_at = Column(DateTime(timezone=True), nullable=True)
+
+    memory = relationship("Memory")
+
