@@ -6,13 +6,13 @@
 
 ## Context
 
-We have 4 hours to build a production-quality memory system. We need something that:
+We have to build a production-quality memory system. We need something that:
 - Can be deployed quickly to cloud services
-- Is easy to test and debug during the hackathon
+- Is easy to test and debug during the time
 - Can grow into a larger system later
 - Handles failures gracefully
 
-The AI PR Review Agent project uses a "modular monolith" pattern — one main application divided into clear, independent modules. This gives us the best of both worlds: the simplicity of a single application with the organization of a distributed system.
+The AI PR Review Agent project uses a "modular monolith" pattern one main application divided into clear, independent modules. This gives us the best of both worlds: the simplicity of a single application with the organization of a distributed system.
 
 ## Decision
 
