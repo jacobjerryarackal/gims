@@ -358,7 +358,7 @@ Add screenshots here:
 
 ## Memory Dashboard
 
-![Memory Dashboard](assets/Mmemory.png)
+![Memory Dashboard](assets/Memory.png)
 
 ---
 ## Audit Dashboard
