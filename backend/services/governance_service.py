@@ -7,6 +7,7 @@ from models.hitl import HITLQueue
 from storage.postgres import postgres_storage
 from utils.telemetry import telemetry
 from core.exceptions import UserNotFoundException
+from services.memory_service import memory_service
 
 
 class GovernanceService:
@@ -33,6 +34,9 @@ class GovernanceService:
             type_counts[mem.memory_type] = type_counts.get(mem.memory_type, 0) + 1
         return {"user_id": str(user_id), "total_memories": memory_count, "memory_types": type_counts, "avg_quality": sum(float(m.avg_score) for m in memories) / len(memories) if memories else 0}
 
+    async def create_hitl_item(self, **kwargs) -> HITLQueue:
+        return await postgres_storage.create_hitl_item(**kwargs)
+
     async def get_hitl_queue(self, user_id: uuid.UUID = None, status: str = "pending") -> List[HITLQueue]:
         return await postgres_storage.get_hitl_queue(user_id=user_id, status=status)
 
@@ -40,9 +44,9 @@ class GovernanceService:
         updates = {"status": "approved" if action == "approve" else "rejected", "reviewer_notes": reviewer_notes, "reviewed_at": datetime.utcnow()}
         item = await postgres_storage.update_hitl_item(item_id, **updates)
         if action == "approve" and item.memory_id:
-            await postgres_storage.update_memory(item.memory_id, status="active")
+            await memory_service.update_memory(item.memory_id, status="active")
         elif action == "reject" and item.memory_id:
-            await postgres_storage.update_memory(item.memory_id, status="deleted")
+            await memory_service.update_memory(item.memory_id, status="deleted")
         telemetry.log_memory_operation(f"hitl_{action}", user_id=item.user_id, memory_id=item.memory_id, details={"notes": reviewer_notes})
         return item
 
