@@ -18,7 +18,19 @@ class HITLReviewRequest(BaseModel):
 async def get_hitl_queue(status: str = "pending"):
     try:
         items = await governance_service.get_hitl_queue(status=status)
-        return {"items": [{"id": str(item.id), "memory_content": item.reason, "confidence_score": float(item.confidence_score), "reason": item.reason, "status": item.status, "created_at": item.created_at} for item in items]}
+        return {
+            "items": [
+                {
+                    "id": str(item.id),
+                    "memory_content": item.memory.content if item.memory else item.reason,
+                    "confidence_score": float(item.confidence_score),
+                    "reason": item.reason,
+                    "status": item.status,
+                    "created_at": item.created_at
+                }
+                for item in items
+            ]
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
