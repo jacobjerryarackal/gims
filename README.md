@@ -345,11 +345,25 @@ GET /api/v1/metrics
 
 Add screenshots here:
 
-* Landing Page
-* Chat Interface
-* Memory Dashboard
-* Audit Dashboard
-* HITL Queue
+## Landing Page
+
+![Landing Page](assets/Landing1.png)
+![Landing Page 2](assets/Landing2.png)
+---
+
+## Chat Interface
+
+![Chat Interface](assets/Chat.png)
+---
+
+## Memory Dashboard
+
+![Memory Dashboard](assets/Mmemory.png)
+
+---
+## Audit Dashboard
+
+![Audit Dashboard](assets/Audit.png)
 
 ---
 
