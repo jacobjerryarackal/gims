@@ -187,7 +187,25 @@ class MemoryPipeline:
             evaluated = state.get("evaluated_memories", [])
             for e in evaluated:
                 if e["decision"] == "hitl":
-                    await governance_service.create_hitl_item(user_id=uuid.UUID(state["user_id"]), reason=e["evaluation_reason"], confidence_score=e["avg_score"])
+                    source_turn_id = e["candidate"].get("source_turn_id")
+                    memory = await memory_service.create_memory(
+                        user_id=uuid.UUID(state["user_id"]),
+                        content=e["candidate"]["memory_text"],
+                        memory_type=e["candidate"]["memory_type"],
+                        relevance_score=e["relevance_score"],
+                        novelty_score=e["novelty_score"],
+                        accuracy_score=e["accuracy_score"],
+                        conversation_id=uuid.UUID(state["conversation_id"]),
+                        source_turn_id=uuid.UUID(source_turn_id) if source_turn_id else None,
+                        dedup=False,
+                        status="pending"
+                    )
+                    await governance_service.create_hitl_item(
+                        user_id=uuid.UUID(state["user_id"]),
+                        memory_id=memory.id,
+                        reason=e["evaluation_reason"],
+                        confidence_score=e["avg_score"]
+                    )
             state["stored_memories"] = []
         except Exception as e:
             print(f"PIPELINE HiTl ERROR: {str(e)}")
