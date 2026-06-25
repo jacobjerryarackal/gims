@@ -11,7 +11,7 @@ from services.dedup_service import dedup_service
 from datetime import datetime, timezone
 
 class MemoryService:
-    async def create_memory(self, user_id: uuid.UUID, content: str, memory_type: str, relevance_score: float, novelty_score: float, accuracy_score: float, conversation_id: uuid.UUID = None, source_turn_id: uuid.UUID = None, event_date: datetime = None, participants: List[str] = None, dedup: bool = True) -> Memory:
+    async def create_memory(self, user_id: uuid.UUID, content: str, memory_type: str, relevance_score: float, novelty_score: float, accuracy_score: float, conversation_id: uuid.UUID = None, source_turn_id: uuid.UUID = None, event_date: datetime = None, participants: List[str] = None, dedup: bool = True, status: str = "active") -> Memory:
         if dedup:
             result = await dedup_service.check_duplicates(user_id=user_id, content=content, memory_type=memory_type)
             if result["is_duplicate"]:
@@ -27,7 +27,7 @@ class MemoryService:
 
             if participants is None:
                 participants = []
-        memory = Memory(user_id=user_id, conversation_id=conversation_id, memory_type=memory_type, content=content, relevance_score=relevance_score, novelty_score=novelty_score, accuracy_score=accuracy_score, avg_score=avg_score, status="active", source_turn_id=source_turn_id, event_date=event_date, participants=participants)
+        memory = Memory(user_id=user_id, conversation_id=conversation_id, memory_type=memory_type, content=content, relevance_score=relevance_score, novelty_score=novelty_score, accuracy_score=accuracy_score, avg_score=avg_score, status=status, source_turn_id=source_turn_id, event_date=event_date, participants=participants)
         print(
             f"STORE DEBUG: "
             f"type={memory_type}, "
@@ -41,14 +41,15 @@ class MemoryService:
             actor="system",
             reason=f"Created {memory_type} memory"
         )
-        try:
-            embedding = await embedding_service.generate_embedding(content)
-            chroma_id = await chroma_storage.add_memory(user_id=user_id, memory_id=memory.id, content=content, embedding=embedding, metadata={"memory_type": memory_type, "avg_score": float(avg_score), "status": "active"})
-            memory.chroma_id = chroma_id
-            await postgres_storage.update_memory(memory.id, chroma_id=chroma_id)
-        except Exception as e:
-            telemetry.log_memory_operation("chroma_store_failed", user_id=user_id, memory_id=memory.id, details={"error": str(e)})
-        telemetry.log_memory_operation("created", user_id=user_id, memory_id=memory.id, details={"type": memory_type, "avg_score": float(avg_score)})
+        if status == "active":
+            try:
+                embedding = await embedding_service.generate_embedding(content)
+                chroma_id = await chroma_storage.add_memory(user_id=user_id, memory_id=memory.id, content=content, embedding=embedding, metadata={"memory_type": memory_type, "avg_score": float(avg_score), "status": "active"})
+                memory.chroma_id = chroma_id
+                await postgres_storage.update_memory(memory.id, chroma_id=chroma_id)
+            except Exception as e:
+                telemetry.log_memory_operation("chroma_store_failed", user_id=user_id, memory_id=memory.id, details={"error": str(e)})
+        telemetry.log_memory_operation("created", user_id=user_id, memory_id=memory.id, details={"type": memory_type, "avg_score": float(avg_score), "status": status})
         return memory
 
     async def get_memory(self, memory_id: uuid.UUID) -> Memory:
@@ -62,6 +63,10 @@ class MemoryService:
         if content is not None: updates["content"] = content
         if status is not None: updates["status"] = status
         if expires_at is not None: updates["expires_at"] = expires_at
+        
+        # Load memory first to check state transitions
+        old_memory = await postgres_storage.get_memory(memory_id)
+        
         memory = await postgres_storage.update_memory(memory_id, **updates)
         await postgres_storage.create_audit_log(
             user_id=memory.user_id,
@@ -70,11 +75,36 @@ class MemoryService:
             actor="user",
             reason="Memory updated"
         )
-        if content:
+        
+        # If transitioning from non-active (like pending) to active, index in ChromaDB
+        if status == "active" and old_memory.status != "active":
+            try:
+                embedding = await embedding_service.generate_embedding(memory.content)
+                chroma_id = await chroma_storage.add_memory(
+                    user_id=memory.user_id,
+                    memory_id=memory.id,
+                    content=memory.content,
+                    embedding=embedding,
+                    metadata={"memory_type": memory.memory_type, "avg_score": float(memory.avg_score), "status": "active"}
+                )
+                memory = await postgres_storage.update_memory(memory.id, chroma_id=chroma_id)
+            except Exception as e:
+                telemetry.log_memory_operation("chroma_store_failed", user_id=memory.user_id, memory_id=memory.id, details={"error": str(e)})
+        
+        # If transitioning to deleted from active, mark as deleted in ChromaDB
+        elif status == "deleted" and old_memory.status == "active":
+            try:
+                await chroma_storage.update_memory(user_id=memory.user_id, memory_id=memory_id, metadata={"status": "deleted"})
+            except Exception as e:
+                telemetry.log_memory_operation("chroma_delete_failed", user_id=memory.user_id, memory_id=memory_id, details={"error": str(e)})
+        
+        # If just updating content and it is active, update in ChromaDB
+        elif content and memory.status == "active":
             try:
                 await chroma_storage.update_memory(user_id=memory.user_id, memory_id=memory_id, content=content)
             except Exception as e:
                 telemetry.log_memory_operation("chroma_update_failed", user_id=memory.user_id, memory_id=memory_id, details={"error": str(e)})
+                
         telemetry.log_memory_operation("updated", user_id=memory.user_id, memory_id=memory_id, details={"fields": list(updates.keys())})
         return memory
 
