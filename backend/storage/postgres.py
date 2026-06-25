@@ -1,7 +1,7 @@
 from typing import Optional, List
 from sqlalchemy import select, update, func, text
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import declarative_base, selectinload
 from core.config import settings
 import os
 from models import AsyncSessionLocal
@@ -166,7 +166,7 @@ class PostgresStorage:
 
     async def get_hitl_queue(self, user_id: uuid.UUID = None, status: str = "pending") -> List[HITLQueue]:
         async with self.session_factory() as session:
-            query = select(HITLQueue).where(HITLQueue.status == status)
+            query = select(HITLQueue).options(selectinload(HITLQueue.memory)).where(HITLQueue.status == status)
             if user_id:
                 query = query.where(HITLQueue.user_id == user_id)
             query = query.order_by(HITLQueue.created_at.desc())
