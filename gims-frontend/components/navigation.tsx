@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MessageSquare, Brain, ClipboardList, Sparkles } from "lucide-react";
+import { MessageSquare, Brain, ClipboardList, Sparkles, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/chat", label: "Chat", icon: MessageSquare },
   { href: "/memories", label: "Memories", icon: Brain },
   { href: "/audit", label: "Audit", icon: ClipboardList },
+  { href: "/hitl", label: "Review", icon: Eye },
 ];
 
 export function Navigation() {
