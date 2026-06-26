@@ -2,7 +2,7 @@
 
 A production-inspired memory system for AI assistants that extracts, evaluates, stores, retrieves, and explains user memories across conversations.
 
-Built for a hackathon using FastAPI, PostgreSQL, ChromaDB, and Next.js.
+Built this project using FastAPI, PostgreSQL, ChromaDB, and Next.js.
 
 ---
 
