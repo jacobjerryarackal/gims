@@ -50,8 +50,11 @@ class GovernanceService:
         telemetry.log_memory_operation(f"hitl_{action}", user_id=item.user_id, memory_id=item.memory_id, details={"notes": reviewer_notes})
         return item
 
-    async def get_audit_logs(self, user_id: uuid.UUID = None, action: str = None, limit: int = 100) -> List:
-        return await postgres_storage.get_audit_logs(user_id=user_id, action=action, limit=limit)
+    async def get_audit_logs(self, user_id: uuid.UUID = None, action: str = None, limit: int = 100, offset: int = 0) -> List:
+        return await postgres_storage.get_audit_logs(user_id=user_id, action=action, limit=limit, offset=offset)
+
+    async def get_audit_log_count(self, user_id: uuid.UUID = None, action: str = None) -> int:
+        return await postgres_storage.get_audit_log_count(user_id=user_id, action=action)
 
     async def delete_all_user_data(self, user_id: uuid.UUID) -> None:
         memories = await postgres_storage.get_memories_by_user(user_id, limit=10000)
