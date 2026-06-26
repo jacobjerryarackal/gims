@@ -145,16 +145,26 @@ class PostgresStorage:
             await session.refresh(log)
             return log
 
-    async def get_audit_logs(self, user_id: uuid.UUID = None, action: str = None, limit: int = 100) -> List[MemoryAuditLog]:
+    async def get_audit_logs(self, user_id: uuid.UUID = None, action: str = None, limit: int = 100, offset: int = 0) -> List[MemoryAuditLog]:
         async with self.session_factory() as session:
             query = select(MemoryAuditLog)
             if user_id:
                 query = query.where(MemoryAuditLog.user_id == user_id)
             if action:
                 query = query.where(MemoryAuditLog.action == action)
-            query = query.order_by(MemoryAuditLog.created_at.desc()).limit(limit)
+            query = query.order_by(MemoryAuditLog.created_at.desc()).offset(offset).limit(limit)
             result = await session.execute(query)
             return result.scalars().all()
+
+    async def get_audit_log_count(self, user_id: uuid.UUID = None, action: str = None) -> int:
+        async with self.session_factory() as session:
+            query = select(func.count(MemoryAuditLog.id))
+            if user_id:
+                query = query.where(MemoryAuditLog.user_id == user_id)
+            if action:
+                query = query.where(MemoryAuditLog.action == action)
+            result = await session.execute(query)
+            return result.scalar() or 0
 
     async def create_hitl_item(self, **kwargs) -> HITLQueue:
         async with self.session_factory() as session:
