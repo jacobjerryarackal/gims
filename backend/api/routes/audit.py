@@ -17,11 +17,9 @@ async def get_audit_logs(
 ):
     """Get audit logs."""
     try:
-        if user_id:
-            user_uuid = uuid.UUID(user_id)
-            logs = await postgres_storage.get_audit_logs(user_id=user_uuid, action=action, limit=limit)
-        else:
-            logs = await postgres_storage.get_audit_logs(action=action, limit=limit)
+        user_uuid = uuid.UUID(user_id) if user_id else None
+        logs = await governance_service.get_audit_logs(user_id=user_uuid, action=action, limit=limit, offset=offset)
+        total = await governance_service.get_audit_log_count(user_id=user_uuid, action=action)
 
         return {
             "items": [
@@ -35,7 +33,7 @@ async def get_audit_logs(
                 }
                 for log in logs
             ],
-            "total": len(logs)
+            "total": total
         }
     except Exception as e:
         print("AUDIT ERROR:", e)
