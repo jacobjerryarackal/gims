@@ -76,6 +76,13 @@ export default function LandingPage() {
               Audit
             </Button>
 
+            <Button
+              variant="ghost"
+              onClick={() => router.push("/hitl")}
+            >
+              Review
+            </Button>
+
             <Button onClick={() => router.push("/chat")}>
               <MessageSquare className="mr-2 h-4 w-4" />
               Start Chatting
