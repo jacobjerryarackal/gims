@@ -22,8 +22,9 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from "@/components/ui/select";
 import { Memory, MemoryStats } from "@/types";
-import { getMemories, updateMemory, deleteMemory, getMemoryStats } from "@/lib/api";
+import { getMemories, updateMemory, deleteMemory, getMemoryStats, searchMemories } from "@/lib/api";
 import { formatDate, formatRelativeDate, getScoreColor, getScoreBg } from "@/lib/utils";
+import { MemoryCard } from "@/components/MemoryCard";
 
 const typeColors = {
   semantic: "bg-blue-500/10 text-blue-500 border-blue-500/20",
@@ -48,37 +49,65 @@ export default function MemoryManager() {
   const [editContent, setEditContent] = useState("");
   const [totalCount, setTotalCount] = useState(0);
 
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const loadStats = async () => {
+    try {
+      const statsData = await getMemoryStats();
+      setStats(statsData);
+    } catch (error) {
+      console.error("Failed to load stats:", error);
+    }
+  };
+
   useEffect(() => {
-    const loadInitialStats = async () => {
-      try {
-        const statsData = await getMemoryStats();
-        setStats(statsData);
-      } catch (error) {
-        console.error("Failed to load stats:", error);
-      }
-    };
-    loadInitialStats();
-  }, [])
+    loadStats();
+  }, [refreshTrigger]);
 
   useEffect(() => {
     const loadMemories = async () => {
-    setLoading(true);
-    try {
-      const data = await getMemories({
-        search: searchQuery,
-        type: typeFilter === "all" ? undefined : typeFilter,
-        limit: 100,
-      });
-      setMemories(data?.items || []); // Ensure we always set an array
-      setTotalCount(data?.total || 0); // Ensure we always set a number
-    } catch (error) {
+      setLoading(true);
+      try {
+        let items: Memory[] = [];
+        let total = 0;
+
+        if (searchQuery.trim()) {
+          const searchResult = await searchMemories(searchQuery.trim());
+          items = (searchResult.results || []).map((r: any) => ({
+            id: r.id,
+            user_id: "",
+            content: r.content,
+            type: (r.memory_type || r.type || "semantic") as any,
+            status: "active",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            retrieval_count: 0,
+            overall_score: r.avg_score ?? r.overall_score ?? 0.5,
+            expires_at: null,
+          }));
+          if (typeFilter !== "all") {
+            items = items.filter((item) => item.type === typeFilter);
+          }
+          total = items.length;
+        } else {
+          const data = await getMemories({
+            type: typeFilter === "all" ? undefined : typeFilter,
+            limit: 100,
+          });
+          items = data?.items || [];
+          total = data?.total || 0;
+        }
+
+        setMemories(items);
+        setTotalCount(total);
+      } catch (error) {
         console.error("Failed to load memories:", error);
-    } finally {
-      setLoading(false);
-    }
+      } finally {
+        setLoading(false);
+      }
     };
     loadMemories();
-  }, [searchQuery, typeFilter]);
+  }, [searchQuery, typeFilter, refreshTrigger]);
 
   const handleUpdate = async () => {
     if (!editingMemory) return;
@@ -88,6 +117,7 @@ export default function MemoryManager() {
         prev.map((m) => (m.id === editingMemory.id ? { ...m, content: editContent } : m))
       );
       setEditingMemory(null);
+      loadStats();
     } catch (error) {
       console.error("Failed to update memory:", error);
     }
@@ -100,9 +130,14 @@ export default function MemoryManager() {
       setMemories((prev) => prev.filter((m) => m.id !== deleteConfirm.id));
       setTotalCount((prev) => prev - 1);
       setDeleteConfirm(null);
+      loadStats();
     } catch (error) {
       console.error("Failed to delete memory:", error);
     }
+  };
+
+  const handleRefresh = () => {
+    setRefreshTrigger((prev) => prev + 1);
   };
 
   return (
@@ -117,7 +152,7 @@ export default function MemoryManager() {
             View, edit, and manage what GIMS knows about you
           </p>
         </div>
-        <Button variant="outline" onClick={() => {}}>
+        <Button variant="outline" onClick={handleRefresh}>
           <Sparkles className="mr-2 h-4 w-4" />
           Refresh
         </Button>
@@ -234,70 +269,14 @@ export default function MemoryManager() {
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                 >
-                  <Card className="group hover:shadow-md transition-shadow">
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Badge
-                              variant="outline"
-                              className={`text-xs capitalize ${typeColors[memory.type]}`}
-                            >
-                              <span className="mr-1">{typeIcons[memory.type]}</span>
-                              {memory.type}
-                            </Badge>
-                            <Badge
-                              variant="outline"
-                              className={`text-xs ${getScoreBg(memory.overall_score)} ${getScoreColor(memory.overall_score)}`}
-                            >
-                              <Star className="mr-1 h-3 w-3" />
-                              {(memory.overall_score * 100).toFixed(0)}%
-                            </Badge>
-                            {memory.retrieval_count > 0 && (
-                              <Badge variant="outline" className="text-xs">
-                                <TrendingUp className="mr-1 h-3 w-3" />
-                                {memory.retrieval_count} uses
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-sm font-medium leading-relaxed">{memory.content}</p>
-                          <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              Created {formatRelativeDate(memory.created_at)}
-                            </span>
-                            {memory.last_retrieved_at && (
-                              <span className="flex items-center gap-1">
-                                <TrendingUp className="h-3 w-3" />
-                                Last used {formatRelativeDate(memory.last_retrieved_at)}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => {
-                              setEditingMemory(memory);
-                              setEditContent(memory.content);
-                            }}
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-destructive hover:text-destructive"
-                            onClick={() => setDeleteConfirm(memory)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <MemoryCard
+                    memory={memory}
+                    onEdit={(m) => {
+                      setEditingMemory(m);
+                      setEditContent(m.content);
+                    }}
+                    onDelete={(m) => setDeleteConfirm(m)}
+                  />
                 </motion.div>
               ))
             )}

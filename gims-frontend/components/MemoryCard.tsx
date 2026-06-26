@@ -3,8 +3,9 @@
 import { Memory } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Brain, Star, TrendingUp, Clock } from "lucide-react";
+import { Brain, Star, TrendingUp, Clock, Edit2, Trash2 } from "lucide-react";
 import { formatRelativeDate, getScoreColor, getScoreBg } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface MemoryCardProps {
   memory: Memory;
@@ -22,7 +23,7 @@ export function MemoryCard({ memory, onEdit, onDelete }: MemoryCardProps) {
   const config = typeConfig[memory.type];
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card className="group hover:shadow-md transition-shadow">
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
@@ -53,6 +54,30 @@ export function MemoryCard({ memory, onEdit, onDelete }: MemoryCardProps) {
               )}
             </div>
           </div>
+          {(onEdit || onDelete) && (
+            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              {onEdit && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => onEdit(memory)}
+                >
+                  <Edit2 className="h-4 w-4" />
+                </Button>
+              )}
+              {onDelete && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-destructive hover:text-destructive"
+                  onClick={() => onDelete(memory)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
